@@ -22,7 +22,7 @@ def tex(a):
 			b += a[i]
 	return b
 
-class Lokal:
+class Lokal(object):
 	def __init__(self, problem, glob):
 		self.problem = problem
 		self.glob = glob

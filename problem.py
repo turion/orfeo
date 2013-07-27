@@ -33,7 +33,7 @@ def lpsolver():
 		return pulp.GLPK()
 
 # Stellt eine Matrix dar, die sich sowohl mit Datenbankobjekten als auch mit deren IDs indizieren lässt
-class Bessere:
+class Bessere(object):
 	def __init__(self, indizes, default):
 		self.indizes = indizes
 		self.matrix = {tuple(map(macheint, a)): copy.deepcopy(default) for a in itertools.product(*indizes)}
@@ -67,7 +67,7 @@ class PulpMatrix(Bessere):
 		return r
 
 # Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)
-class Problem:
+class Problem(object):
 	def __init__(self):
 		self.jahr = 2012
 		personen = daten.jemals_anmeldungen.filter(NimmtTeil.jahr==self.jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)

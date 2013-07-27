@@ -6,7 +6,7 @@ from prettytable import PrettyTable # Das ist ein Pythonpaket
 from problem import Bessere, PulpMatrix, lpsolver, Problem
 
 # Speichert eine Lösung des globalen Stundenplanproblems (wann hält welcher Betreuer welches Thema wo?)
-class Global:
+class Global(object):
 	def __init__(self, problem):
 		self.problem = problem
 	
