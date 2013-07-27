@@ -45,7 +45,7 @@ if args.globalbetreuer:
 if args.globalthema:
 	glob.zeige_thema()
 lokal = None
-if args.lokal:
+if args.lokal or args.glob:
 	lokal = Lokal.calculate(problem, glob)
 	lokal.save("lokal.txt")
 else:
