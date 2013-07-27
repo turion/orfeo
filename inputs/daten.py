@@ -327,11 +327,10 @@ from .__init__ import AbstractProblem
 class Problem(AbstractProblem):
 	def __init__(self):
 		jahr = 2012
-		personen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
-		betreuer = map(lambda x: x[1], personen.filter(Personen.betreuer=="1").all())
+		relevante_anmeldungen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
+		betreuer = map(lambda x: x[1], relevante_anmeldungen.filter(Personen.betreuer=="1").all())
 		betreuer.sort(key = lambda a : (a.cnachname(), a.cvorname()))
-		print([(repr(betreu.id), betreu.name()) for betreu in betreuer])
-		schueler = map(lambda x: x[1], personen.filter(Personen.betreuer=='').all())
+		schueler = map(lambda x: x[1], relevante_anmeldungen.filter(Personen.betreuer=='').all())
 		schueler.sort(key = lambda a : (a.cnachname(), a.cvorname()))
 		zeiteinheiten_ = zeiteinheiten.filter(Zeiteinheiten.jahr==jahr).all()
 		zeiteinheiten_.sort(key = lambda z: z.stelle)
