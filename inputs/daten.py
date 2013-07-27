@@ -20,6 +20,7 @@ session = sqlalchemy.orm.sessionmaker(bind=engine)() # Eine SQL-Sitzung wird ges
 Base = sqlalchemy.ext.declarative.declarative_base()
 metadata = Base.metadata
 metadata.reflect(engine) # Aktualisiere die Information über alle vorhandenen Tabellen
+
 class IDLinker(object): # wird mit foreign key obsolet, das bei der Migration zu mysql eingeführt wird
 	"""Oft hat man Tabellen mit Spalten der Form blablabla_id. Dabei ist blablabla_id die id einer Zeile aus der Tabelle blablabla, ein sogenannter Verweis.
 	Man muss nun, um an diese Zeile dranzukommen, erst mal eine Abfrage durchführen. Das kann man in Python zum Glück automatisieren, und zwar mit der Methode __getattr__.
@@ -321,3 +322,41 @@ class StatusLeser(object):
 status = StatusLeser()
 
 alle_klassen = {"personen": Personen, "voraussetzungen": Voraussetzungen, "gebiete": Gebiete, "themen": Themen, "themen_ausnahmen": ThemenAusnahmen, "kompetenzen": Kompetenzen, "wunschthemen": Wunschthemen, "nimmt_teil": NimmtTeil, "nimmt_teil_zeiteinheiten_ausnahmen": NimmtTeilZeiteinheitenAusnahmen, "zeiteinheiten": Zeiteinheiten, "raeume": Raeume}
+
+from .__init__ import AbstractProblem
+class Problem(AbstractProblem):
+	def __init__(self):
+		jahr = 2012
+		personen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
+		betreuer = map(lambda x: x[1], personen.filter(Personen.betreuer=="1").all())
+		betreuer.sort(key = lambda a : (a.cnachname(), a.cvorname()))
+		print([(repr(betreu.id), betreu.name()) for betreu in betreuer])
+		schueler = map(lambda x: x[1], personen.filter(Personen.betreuer=='').all())
+		schueler.sort(key = lambda a : (a.cnachname(), a.cvorname()))
+		zeiteinheiten_ = zeiteinheiten.filter(Zeiteinheiten.jahr==jahr).all()
+		zeiteinheiten_.sort(key = lambda z: z.stelle)
+		raeume_ = raeume.filter(Raeume.jahr==jahr).all()
+		raeume_.sort(key = lambda r : r.name.lower())
+		raeume_ausnahmen = map(lambda x: x[0], session.query(RaeumeAusnahmen, Raeume).filter(RaeumeAusnahmen.raeume_id==Raeume.id).filter(Raeume.jahr==jahr).all())
+		themen_ = [thema for thema in themen if wunschthemen.filter_by(jahr=jahr, themen_id=thema.id).count()]
+		themen_.sort(key = lambda t : t.titel.lower())
+		gebiete_ = gebiete.all()
+		gebiete_.sort(key = lambda g : g.titel.lower())
+
+		## Mikhail hardgecodet
+		self.mikhail = personen.filter_by(id=132).one()
+		self.mikhail_1 = themen.filter_by(id=16).one()
+		self.mikhail_2 = themen.filter_by(id=17).one()
+		self.mikhail_3 = themen.filter_by(id=18).one()
+		self.mikhail_4 = Themen(titel=self.mikhail_3.titel,
+						beschreibung=self.mikhail_3.beschreibung,
+						kommentar=self.mikhail_3.kommentar,
+						aktuelle_version=self.mikhail_3.aktuelle_version,
+						min_stufe=self.mikhail_3.min_stufe,
+						typ=self.mikhail_3.typ,
+						regelmaessig=self.mikhail_3.regelmaessig)
+		self.mikhail_4.id = 100000 # FIXME das ist ein übler Hack
+		themen_.append(self.mikhail_4)
+		self.mikhail_4.titel += " (sequel)"
+
+		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, raeume_, gebiete_, kompetenzen.all(), voraussetzungen.all(), session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)

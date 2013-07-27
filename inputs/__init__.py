@@ -1,27 +1,25 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
-#FIXME: Sonderzeichen in einfachen Strings und nicht in unicodes. Benutzt Fabian python3?
-import daten
-from daten import NimmtTeil, Personen, Wunschthemen, Raeume, RaeumeAusnahmen, Zeiteinheiten
+#import daten
+#from daten import NimmtTeil, Personen, Wunschthemen, Raeume, RaeumeAusnahmen, Zeiteinheiten
 
 import pulp
 import itertools
 import copy
 from prettytable import PrettyTable # Das ist ein Pythonpaket
 
-#TODO: Ausnahmen von letztem Jahr teilweise wieder mit reinnehmen
 #TODO: Professorenvorträge
 #TODO: Einführungsvorträge früh
 
 def macheint(a):
-	if a.__class__ == int:
+	if isinstance(a, int):
 		return a
 	else:
 		return a.id
 
 def machetupel(a):
-	if a.__class__ == tuple or a.__class__ == list:
+	if isinstance(a, (list, tuple)):
 		return tuple(a)
 	else:
 		return tuple([a])
@@ -67,49 +65,29 @@ class PulpMatrix(Bessere):
 		return r
 
 # Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)
-class Problem(object):
-	def __init__(self):
-		self.jahr = 2012
-		personen = daten.jemals_anmeldungen.filter(NimmtTeil.jahr==self.jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
-		self.betreuer = map(lambda x: x[1], personen.filter(Personen.betreuer=="1").all())
-		self.betreuer.sort(key = lambda a : (a.cnachname(), a.cvorname()))
-		self.schueler = map(lambda x: x[1], personen.filter(Personen.betreuer=='').all())
-		self.schueler.sort(key = lambda a : (a.cnachname(), a.cvorname()))
-		self.zeiteinheiten = daten.zeiteinheiten.filter(Zeiteinheiten.jahr==self.jahr).all()
-		self.zeiteinheiten.sort(key = lambda z: z.stelle)
-		self.raeume = daten.raeume.filter(Raeume.jahr==self.jahr).all()
-		self.raeume.sort(key = lambda r : r.name.lower())
-		raeume_ausnahmen = map(lambda x: x[0], daten.session.query(RaeumeAusnahmen, Raeume).filter(RaeumeAusnahmen.raeume_id==Raeume.id).filter(Raeume.jahr==self.jahr).all())
-		self.themen = [thema for thema in daten.themen if daten.wunschthemen.filter_by(jahr=self.jahr, themen_id=thema.id).count()]
-		# Mikhail hardgecodet
-		self.mikhail = daten.personen.filter_by(id=132).one()
-		self.mikhail_1 = daten.themen.filter_by(id=16).one()
-		self.mikhail_2 = daten.themen.filter_by(id=17).one()
-		self.mikhail_3 = daten.themen.filter_by(id=18).one()
-		self.mikhail_4 = daten.Themen(titel=self.mikhail_3.titel,
-						beschreibung=self.mikhail_3.beschreibung,
-						kommentar=self.mikhail_3.kommentar,
-						aktuelle_version=self.mikhail_3.aktuelle_version,
-						min_stufe=self.mikhail_3.min_stufe,
-						typ=self.mikhail_3.typ,
-						regelmaessig=self.mikhail_3.regelmaessig)
-		self.mikhail_4.id = 100000 # FIXME das ist ein übler Hack
-		self.themen.append(self.mikhail_4)
-		self.mikhail_4.titel += " (sequel)"
-		self.themen.sort(key = lambda t : t.titel.lower())
-		self.gebiete = daten.gebiete.all()
-		self.gebiete.sort(key = lambda g : g.titel.lower())
-
+class AbstractProblem(object):
+	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, gebiete, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen): #TODO: Gebiete sollten hier gar nicht auftauchen. In inputs.daten.Problem sollten die Gebietsabhängigkeiten in direkte Abhängigkeiten zwischen den Themen aufgelöst werden.
+		self.themen = themen
+		self.betreuer = betreuer
+		self.schueler = schueler
+		self.zeiteinheiten = zeiteinheiten
+		self.raeume = raeume
+		self.gebiete = gebiete
+		self.kompetenzen = kompetenzen
+		self.voraussetzungen = voraussetzungen
+		self.ausnahmen = ausnahmen
+		self.wunschthemen = wunschthemen
+		self.raeume_ausnahmen = raeume_ausnahmen
 		# Ob a zur Zeit z anwesend ist
 		self.istda = Bessere((self.schueler,self.zeiteinheiten), 1)
-		for ausnahme in daten.session.query(daten.NimmtTeilZeiteinheitenAusnahmen): # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
+		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
 			if ausnahme.nimmt_teil.personen in self.schueler:
 				self.istda[ausnahme.nimmt_teil.personen_id, ausnahme.zeiteinheiten_id] = 0
 
 		# Wie gerne a Thema t mag
 		self.pref = Bessere((self.betreuer+self.schueler,self.themen), 0)
 		for a in (self.betreuer+self.schueler):
-			W = daten.wunschthemen.filter_by(personen_id=a.id, jahr=self.jahr).all()
+			W = wunschthemen[a.id]
 			for w in W:
 				self.pref[a,w.themen_id] = w.gerne or 0 # FIXME das "or 0" ist sehr seltsam und sollte nicht gebraucht werden
 				if w.themen_id == self.mikhail_3.id:
@@ -139,7 +117,7 @@ class Problem(object):
 
 		# Ob a Gebiet g kann
 		self.kanngebiet = Bessere((self.schueler,self.gebiete), False)
-		for k in daten.kompetenzen:
+		for k in self.kompetenzen:
 			if k.personen in self.schueler:
 				self.kanngebiet[k.personen_id, k.gebiete_id] = True
 
@@ -151,12 +129,9 @@ class Problem(object):
 		self.verwendende = Bessere((self.gebiete,), [])
 		# Themen, die g beibringen
 		self.beibringende = Bessere((self.gebiete,), [])
-		for v in daten.session.query(daten.Voraussetzungen):
+		for v in self.voraussetzungen:
 			t = v.themen
 			if t in self.themen:
-				at = [t]
-				if t.id == self.mikhail_3.id:
-					at.append(self.mikhail_4)
 				if v.setzt_voraus_oder_bringt_bei == 0:
 					self.verwendende[v.gebiete_id] += [t]
 				else:

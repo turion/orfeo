@@ -9,6 +9,7 @@ import sys
 import argparse
 
 parser = argparse.ArgumentParser(description="Mache etwas mit einem Stundenplan")
+parser.add_argument("-x", "--xml", action="store_true", help="Wählt eine XML-Datei als Eingabe, und nicht die Datenbank")
 parser.add_argument("-pg", "--problemgebiet", action="store_true", help="Gebiet|Anteil der kompetenten Schüler")
 parser.add_argument("-g", "--global", action="store_true", dest="glob", help="Berechnet den globalen Stundenplan (neu)")
 parser.add_argument("-gz", "--globalzeit", action="store_true", help="Zeit|Thema|Betreuer|Raum")
@@ -23,12 +24,16 @@ parser.add_argument("-t", "--tex", action="store_true", help="Kursübersicht und
 args = parser.parse_args() # Das muss vor der Einbindung von orpheus kommen
 sys.argv = [sys.argv[0]] # Weil er sonst im orpheus-Modul das erste Argument für einen Benutzernamen hält
 
-from problem import Problem
 from glob import Global
 from lokal import Lokal
-import daten
+#import daten
 
-problem = Problem()
+if args.xml:
+	import inputs.xml as input_backend
+	quit("Zur Zeit noch nicht unterstützt")
+else:
+	import inputs.daten as input_backend
+problem = input_backend.Problem()
 problem.printinfos()
 if args.problemgebiet:
 	problem.zeige_gebiet()
