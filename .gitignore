@@ -33,3 +33,12 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+db.sqlite3
+global.txt
+lokal.txt
+kursplan-ergebnis.*
+stundenplan-ergebnis.*
+*.lp
+*.mps
+*.log
