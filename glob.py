@@ -3,7 +3,7 @@
 
 import pulp
 from prettytable import PrettyTable # Das ist ein Pythonpaket
-from problem import Bessere, PulpMatrix, lpsolver, Problem
+from inputs import Bessere, PulpMatrix, lpsolver
 
 # Speichert eine Lösung des globalen Stundenplanproblems (wann hält welcher Betreuer welches Thema wo?)
 class Global(object):

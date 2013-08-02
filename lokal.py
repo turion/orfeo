@@ -4,7 +4,7 @@
 import pulp
 import subprocess
 from prettytable import PrettyTable # Das ist ein Pythonpaket
-from problem import Bessere, PulpMatrix, lpsolver, Problem
+from inputs import Bessere, PulpMatrix, lpsolver
 
 # Wandelt den String a in ein für eine TeX-Datei passendes Format um
 def tex(a):
