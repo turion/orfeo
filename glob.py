@@ -29,7 +29,7 @@ class Global(object):
 		
 		# Dafür sorgen, dass es genug Kurse für alle gibt
 		for z in p.zeiteinheiten:
-			prob += pulp.lpSum([raum_belegungen[r,t,z]*r.max_personen for t in p.themen for r in p.raeume]) >= sum([p.istda[s,z] for s in p.schueler])-10
+			prob += pulp.lpSum([raum_belegungen[r,t,z]*r.max_personen for t in p.themen for r in p.raeume]) >= sum([p.istda[s,z] for s in p.schueler])
 		
 		# Spezialräume
 		nurinraeumen = Bessere((p.themen,), [])
