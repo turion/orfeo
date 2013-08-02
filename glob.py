@@ -286,7 +286,7 @@ class Global(object):
 						raise Exception(u"Thema \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[1],b.cname(),z.name).encode("utf8"))
 					r = None
 					for rs in p.raeume:
-						if rs.name == line[2]:
+						if "{} ({})".format(rs.name,rs.id) == line[2]:
 							r = rs
 					if r is None:
 						raise Exception(u"Raum \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[2],b.cname(),z.name).encode("utf8"))
@@ -371,7 +371,7 @@ class Global(object):
 					t = self.betreuer_stundenplan[b,z]
 					tn = t.titel if t is not None else ""
 					r = self.betreuer_raumplan[b,z]
-					rn = r.name if r is not None else ""
+					rn = "{} ({})".format(r.name,r.id) if r is not None else ""
 					f.write(u"{} <-> {} <-> {}\n".format(z.name, tn, rn).encode("utf8"))
 	
 	def zeige_zeit(self):
