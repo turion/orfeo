@@ -157,6 +157,7 @@ class Lokal(object):
 	
 	def _load(self, filename):
 		p = self.problem
+		gl = self.glob
 		self.belegungen = Bessere((p.schueler,p.themen,p.zeiteinheiten), 0)
 		gefundene_schueler = set()
 		with open(filename) as f:
@@ -199,9 +200,43 @@ class Lokal(object):
 						raise Exception(u"Thema \"{}\" existiert nicht (für Schüler \"{}\" zu Zeit \"{}\")".format(line[1],s.cname(),z.name).encode("utf8"))
 					self.belegungen[s,t,z] = 1
 		if len(gefundene_schueler) < len(p.schueler):
-			raise Exception(u"Nicht alle Schüler angegeben")
+			raise Exception(u"Nicht alle Schüler angegeben".encode('utf8'))
+		# Ein Schüler besucht pro Zeiteinheit höchstens eine Veranstaltung und das auch nur, wenn er da ist
+		for s in p.schueler:
+			for z in p.zeiteinheiten:
+				if sum([ self.belegungen[s,t,z] for t in p.themen ]) > p.istda[s,z]:
+					raise Exception(u"Schüler {} macht zur Zeit {} mehr als möglich (weil er nicht da ist?)".format(s.cname(),z.name).encode('utf8'))
+		# Ein Schüler besucht jedes Thema höchstens einmal
+		for s in p.schueler:
+			for t in p.themen:
+				if sum([self.belegungen[s,t,z] for z in p.zeiteinheiten]) > 1:
+					raise Exception(u"Schüler {} besucht Thema {} mehrmals".format(s.cname(),t.titel).encode('utf8'))
+		# Thema darf nur belegt werden, wenn ein Raum dafür belegt ist, und dann auch nur in der maximalen Anzahl Personen
+		for z in p.zeiteinheiten:
+			for t in p.themen:
+				if sum([self.belegungen[s,t,z] for s in p.schueler]) > sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume]):
+					raise Exception(u"Thema {} ist zur Zeit {} überbelegt".format(t.titel,z.name).encode('utf8'))
+				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
+				if sum([self.belegungen[s,t,z] for s in p.schueler]) < sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume]):
+					raise Exception(u"Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name).encode('utf8'))
+		# Was für Gebiete der Schüler zu welchen Zeitpunkten gelernt hat
+		kennt_gebiet = Bessere((p.schueler, p.gebiete, p.zeiteinheiten), 0)
+		for g in p.gebiete:
+			for s in p.schueler:
+				if p.kanngebiet[s,g]:
+					for z in p.zeiteinheiten:
+						kennt_gebiet[s,g,z] = 1
+				else:
+					for z in p.zeiteinheiten:
+						kennt_gebiet[s,g,z] = sum([self.belegungen[s,t,z2] for t in p.beibringende[g] for z2 in p.zeiteinheiten if z2.stelle < z.stelle])
+		# Ein Schüler muss alle Voraussetzungen kennen
+		for g in p.gebiete:
+			for s in p.schueler:
+				for z in p.zeiteinheiten:
+					for t in p.verwendende[g]:
+						if self.belegungen[s,t,z] > kennt_gebiet[s,g,z]:
+							raise Exception(u"Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),g.titel,t.titel).encode('utf8'))
 		self.calcrest()
-		# TODO Haufenweise Konsistenzchecks (ungefähr wie die Bedingungen in calculate)
 	
 	@classmethod
 	def load(cls, problem, glob, filename):
