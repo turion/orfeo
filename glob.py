@@ -294,9 +294,66 @@ class Global(object):
 					self.betreuer_themen[b,t] = 1
 					self.betreuer_belegungen[b,t,z] = 1
 		if len(gefundene_betreuer) < len(p.betreuer):
-			raise Exception(u"Nicht alle Betreuer angegeben")
+			raise Exception(u"Nicht alle Betreuer angegeben".encode('utf8'))
+		# Raum nur benutzen, wenn er verfügbar ist (insbesondere zu jedem Zeitpunkt nur höchstens einmal)
+		for r in p.raeume:
+			for z in p.zeiteinheiten:
+				if sum([self.raum_belegungen[r,t,z] for t in p.themen]) > p.raumverfuegbar[r,z]:
+					raise Exception(u"Raum {} wird zu Zeit {} mehrfach belegt".format(r.name,z.name).encode('utf8'))
+		thema_findet_dann_statt = Bessere((p.themen, p.zeiteinheiten), 0)
+		for t in p.themen:
+			for z in p.zeiteinheiten:
+				thema_findet_dann_statt[t,z] = sum([self.raum_belegungen[r,t,z] for r in p.raeume])
+				if thema_findet_dann_statt[t,z] > 1:
+					raise Exception(u"Thema {} findet zur Zeit {} mehrmals statt".format(t.titel,z.name).encode('utf8'))
+		# Dafür sorgen, dass es genug Kurse für alle gibt
+		for z in p.zeiteinheiten:
+			if sum([self.raum_belegungen[r,t,z]*r.max_personen for t in p.themen for r in p.raeume]) < sum([p.istda[s,z] for s in p.schueler]):
+				raise Exception(u"Zu wenig Angebote zur Zeit {}".format(z.name).encode('utf8'))
+		# Spezialräume
+		nurinraeumen = Bessere((p.themen,), [])
+		for r in p.raeume:
+			if r.themen_id: # Der Raum ist für ein spezielles Thema vorgesehen
+				nurinraeumen[r.themen_id] += [r]
+				for t in p.themen:
+					if t.id != r.themen_id: # Also werden alle anderen Themen dort nicht stattfinden
+						for z in p.zeiteinheiten:
+							if self.raum_belegungen[r,t,z] > 0:
+								raise Exception(u"Im Spezialraum {} findet falsches Thema {} zur Zeit {} statt".format(r.name,t.titel,z.name).encode('utf8'))
+		# Richtige Sachen in Spezialräumen stattfinden lassen
+		for t in p.themen:
+			if len(nurinraeumen[t]):
+				for r in p.raeume:
+					if not r in nurinraeumen[t]:
+						for z in p.zeiteinheiten:
+							if self.raum_belegungen[r,t,z] > 0:
+								raise Exception(u"Thema {} findet zur Zeit {} nicht in seinem Spezialraum statt".format(t.titel,z.name).encode('utf8'))
+		for z in p.zeiteinheiten:
+			for b in p.betreuer:
+				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen und auch das nur, wenn er da ist
+				if sum([self.betreuer_belegungen[b,t,z] for t in p.themen]) > p.istda[b,z]:
+					raise Exception(u"Betreuer {} soll zur Zeit {} etwas tun, obwohl er nicht da ist".format(b.cname(),z.name).encode('utf8'))
+		# Jedes Thema wird von genau einem Betreuer gehalten (insbesondere wird jedes Thema mindestens einmal gehalten)
+		# TODO Vielleicht <= statt == nehmen?
+		# TODO Was ist, wenn mehrere Betreuer sich ein Thema teilen wollen?
+		for t in p.themen:
+			if sum([self.betreuer_themen[b,t] for b in p.betreuer]) != 1:
+				raise Exception(u"Thema {} wird nicht von genau einem Betreuer gehalten".format(t.titel).encode('utf8'))
+		# Betreuer-Präferenzen
+		for b in p.betreuer:
+			for t in p.themen:
+				if p.pref[b,t] == 2: # Unbedingt und sonst niemand
+					# Das bedeutet, dass jedes Thema, das jemand unbedingt machen will, irgendwann angeboten wird (TODO so OK?)
+					if self.betreuer_themen[b,t] != 1:
+						raise Exception(u"Betreuer {} bekommt Thema {} nicht, obwohl er es unbedingt will".format(b.cname(),t.titel).encode('utf8'))
+					for ab in p.betreuer:
+						if ab.id != b.id:
+							if self.betreuer_themen[ab,t] != 0:
+								raise Exception(u"Betreuer {} bekommt Thema {}, obwohl {} das unbedingt will".format(ab.cname(),t.titel,b.cname()).encode('utf8'))
+				elif p.pref[b,t] == -1: # Auf keinen Fall
+					if self.betreuer_themen[b,t] != 0:
+						raise Exception(u"Betreuer {} bekommt Thema {}, obwohl er das auf keinen Fall will".format(b.cname(),t.titel).encode('utf8'))
 		self.calcrest()
-		# TODO Haufenweise Konsistenzchecks (ungefähr wie die Bedingungen in calculate)
 	
 	@classmethod
 	def load(cls, problem, filename):
