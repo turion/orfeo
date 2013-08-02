@@ -143,7 +143,7 @@ class AbstractProblem(object):
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
 	
 	def printinfos(self):
-		print len(self.raeume), "Raeume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Anmeldungen", len(self.gebiete), "Gebiete", len(self.zeiteinheiten), "Zeiteinheiten"
+		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.gebiete), "Gebiete", len(self.zeiteinheiten), "Zeiteinheiten"
 	
 	def zeige_gebiet(self):
 		topr = PrettyTable(["ID","Gebiet","Anteil der kompetenten Schüler"])
