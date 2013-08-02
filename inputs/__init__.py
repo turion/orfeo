@@ -79,9 +79,9 @@ class AbstractProblem(object):
 		self.wunschthemen = wunschthemen
 		self.raeume_ausnahmen = raeume_ausnahmen
 		# Ob a zur Zeit z anwesend ist
-		self.istda = Bessere((self.schueler,self.zeiteinheiten), 1)
+		self.istda = Bessere((self.schueler+self.betreuer,self.zeiteinheiten), 1)
 		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
-			if ausnahme.nimmt_teil.personen in self.schueler:
+			if ausnahme.nimmt_teil.personen in self.schueler+self.betreuer:
 				self.istda[ausnahme.nimmt_teil.personen_id, ausnahme.zeiteinheiten_id] = 0
 
 		# Wie gerne a Thema t mag

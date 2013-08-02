@@ -53,8 +53,8 @@ class Global(object):
 		betreuer_belegungen = PulpMatrix("betreuer_belegungen", (p.betreuer, p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
 		for z in p.zeiteinheiten:
 			for b in p.betreuer:
-				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen
-				prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) <= 1
+				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen und auch das nur, wenn er da ist
+				prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) <= p.istda[b,z]
 			for t in p.themen:
 				# Thema findet nur statt, wenn ein Betreuer das macht
 				prob += thema_findet_dann_statt[t,z] == pulp.lpSum([betreuer_belegungen[b,t,z] for b in p.betreuer])
@@ -201,7 +201,7 @@ class Global(object):
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
 		# Jeder Betreuer sollte mindestens 5 Mal etwas tun
 		for b in p.betreuer:
-			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= 5
+			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(5,sum(p.istda[b,z] for z in p.zeiteinheiten))
 		# Jeder Betreuer sollte mindestens 2 verschiedene Themen haben
 		for b in p.betreuer:
 			prob += pulp.lpSum([betreuer_themen[b,t] for t in p.themen]) >= 2
