@@ -325,6 +325,7 @@ alle_klassen = {"personen": Personen, "voraussetzungen": Voraussetzungen, "gebie
 
 from .__init__ import AbstractProblem
 class Problem(AbstractProblem):
+	"""Reine Testklasse, die dazu dient, die alten Daten aus dem Jahr 2012 zum testen zur Verfügung zu haben"""
 	def __init__(self):
 		jahr = 2012
 		relevante_anmeldungen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
