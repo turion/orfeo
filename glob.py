@@ -141,13 +141,6 @@ class Global(object):
 		#TODO: Bei Bedarf hier noch Schranken auf thema_findet_so_oft_statt
 		
 		print("Optimierung")
-		guete = PulpMatrix("guete", (p.themen,p.zeiteinheiten), 0, None, pulp.LpContinuous)
-		if t in p.themen:
-			for z2 in p.zeiteinheiten:
-				#varr = pulp.LpVariable("guete_helferr_{}_{}_{}".format(t.id, z2.id, g.id), 0, 1, pulp.LpInteger)
-				#prob += varr <= pulp.lpSum([thema_findet_dann_statt[b,z1] for b in p.beibringende[g] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
-				#prob += guete[t,z2] <= p.durchschnittskompetenz[g]+(1-p.durchschnittskompetenz[g])*varr
-				guete[t,z2] <= pulp.lpSum([thema_findet_dann_statt[v,z1]*t.gutegroesse() for v in p.thema_voraussetzungen[t] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
 		
 		#for t in p.themen:
 			#for g in p.gebiete:
@@ -159,8 +152,8 @@ class Global(object):
 		for t in p.themen:
 			for z in p.zeiteinheiten:
 				prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse()
-				#prob += platz[t,z] <= guete[t,z]*t.gutegroesse()
-				prob += platz[t,z] <= guete[t,z]
+				for v in p.thema_voraussetzungen[t]:
+					prob += platz[t,z] <= pulp.lpSum([platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle])
 		
 		ueberfuellung = PulpMatrix("ueberfuellung", (p.themen,), 0, None, pulp.LpContinuous)
 		for t in p.themen:
