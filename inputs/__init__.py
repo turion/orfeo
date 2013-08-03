@@ -67,13 +67,12 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, gebiete, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen): #TODO: Gebiete sollten hier gar nicht auftauchen. In inputs.daten.Problem sollten die Gebietsabhängigkeiten in direkte Abhängigkeiten zwischen den Themen aufgelöst werden.
+	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
 		self.themen = themen
 		self.betreuer = betreuer
 		self.schueler = schueler
 		self.zeiteinheiten = zeiteinheiten
 		self.raeume = raeume
-		self.gebiete = gebiete
 		self.kompetenzen = kompetenzen
 		self.voraussetzungen = voraussetzungen
 		self.ausnahmen = ausnahmen
