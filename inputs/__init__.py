@@ -115,27 +115,10 @@ class AbstractProblem(object):
 		for t in self.themen:
 			self.thema_beliebtheit[t] = sum([self.pref_norm[a,t] for a in self.schueler])
 
-		# Ob a Gebiet g kann
-		self.kanngebiet = Bessere((self.schueler,self.gebiete), False)
-		for k in self.kompetenzen:
-			if k.personen in self.schueler:
-				self.kanngebiet[k.personen_id, k.gebiete_id] = True
-
-		self.durchschnittskompetenz = Bessere((self.gebiete,), 0)
-		for g in self.gebiete:
-			self.durchschnittskompetenz[g] = len([a for a in self.schueler if self.kanngebiet[a,g]])*1./len(self.schueler)
-
-		# Themen, die g verwenden
-		self.verwendende = Bessere((self.gebiete,), [])
-		# Themen, die g beibringen
-		self.beibringende = Bessere((self.gebiete,), [])
+		# Voraussetzungen für Thema t
+		self.thema_voraussetzungen = Bessere((self.themen,), [])
 		for v in self.voraussetzungen:
-			t = v.themen
-			if t in self.themen:
-				if v.setzt_voraus_oder_bringt_bei == 0:
-					self.verwendende[v.gebiete_id] += [t]
-				else:
-					self.beibringende[v.gebiete_id] += [t]
+			self.thema_voraussetzungen[v[0]].append(v[1])
 
 		# Ob Raum r zu Zeit z verfügbar ist
 		self.raumverfuegbar = Bessere((self.raeume,self.zeiteinheiten), 1)
@@ -143,10 +126,4 @@ class AbstractProblem(object):
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
 	
 	def printinfos(self):
-		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.gebiete), "Gebiete", len(self.zeiteinheiten), "Zeiteinheiten"
-	
-	def zeige_gebiet(self):
-		topr = PrettyTable(["ID","Gebiet","Anteil der kompetenten Schüler"])
-		for g in self.gebiete:
-			topr.add_row([g.id, g.titel, "%.2f" % self.durchschnittskompetenz[g]])
-		print topr
+		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten"

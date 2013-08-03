@@ -70,25 +70,23 @@ class Lokal(object):
 		print 3
 		#prob += maxauslastung <= 15 # SEHR SELTSAM, dass das die Sache verbessert!!!
 		
-		# Was für Gebiete der Schüler zu welchen Zeitpunkten gelernt hat
-		kennt_gebiet = PulpMatrix("kennt_gebiet", (p.schueler, p.gebiete, p.zeiteinheiten), 0, None, pulp.LpInteger)
-		for g in p.gebiete:
-			for a in p.schueler:
-				if p.kanngebiet[a,g]:
-					for z in p.zeiteinheiten:
-						prob += kennt_gebiet[a,g,z] == 1
-				else:
-					for z in p.zeiteinheiten:
-						prob += kennt_gebiet[a,g,z] == pulp.lpSum([belegungen[a,t,z2] for t in p.beibringende[g] for z2 in p.zeiteinheiten if z2.stelle < z.stelle])
+		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
+		kennt_thema = PulpMatrix("kennt_thema", (p.schueler, p.themen, p.zeiteinheiten), 0, None, pulp.LpInteger)
+		for s in p.schueler:
+			for t in p.themen:
+				vorher = 0
+				for z in p.zeiteinheiten:
+					prob += kennt_thema[s,t,z] == vorher + belegungen[s,t,z]
+					vorher = kennt_thema[s,t,z]
 		print 4
 		
 		# Ein Schüler muss alle Voraussetzungen kennen
-		s = 0
-		for g in p.gebiete:
-			for a in p.schueler:
-				for z in p.zeiteinheiten:
-					for t in p.verwendende[g]:
-						prob += belegungen[a,t,z] <= kennt_gebiet[a,g,z]
+		for t in p.themen:
+			for v in p.thema_voraussetzungen[t]:
+				for s in p.schueler:
+					for z in p.zeiteinheiten:
+						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
+							prob += belegungen[s,t,z] <= kennt_thema[s,v,z]
 		print 5
 		
 
@@ -219,23 +217,22 @@ class Lokal(object):
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				if sum([self.belegungen[s,t,z] for s in p.schueler]) < sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume]):
 					raise Exception(u"Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name).encode('utf8'))
-		# Was für Gebiete der Schüler zu welchen Zeitpunkten gelernt hat
-		kennt_gebiet = Bessere((p.schueler, p.gebiete, p.zeiteinheiten), 0)
-		for g in p.gebiete:
-			for s in p.schueler:
-				if p.kanngebiet[s,g]:
-					for z in p.zeiteinheiten:
-						kennt_gebiet[s,g,z] = 1
-				else:
-					for z in p.zeiteinheiten:
-						kennt_gebiet[s,g,z] = sum([self.belegungen[s,t,z2] for t in p.beibringende[g] for z2 in p.zeiteinheiten if z2.stelle < z.stelle])
-		# Ein Schüler muss alle Voraussetzungen kennen
-		for g in p.gebiete:
-			for s in p.schueler:
+		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
+		kennt_thema = Bessere((p.schueler, p.themen, p.zeiteinheiten), 0)
+		for s in p.schueler:
+			for t in p.themen:
+				vorher = 0
 				for z in p.zeiteinheiten:
-					for t in p.verwendende[g]:
-						if self.belegungen[s,t,z] > kennt_gebiet[s,g,z]:
-							raise Exception(u"Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),g.titel,t.titel).encode('utf8'))
+					kennt_thema[s,t,z] = vorher + self.belegungen[s,t,z]
+					vorher = kennt_thema[s,t,z]
+		# Ein Schüler muss alle Voraussetzungen kennen
+		for t in p.themen:
+			for v in p.thema_voraussetzungen[t]:
+				for s in p.schueler:
+					for z in p.zeiteinheiten:
+						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
+							if self.belegungen[s,t,z] > self.kennt_thema[s,v,z]:
+								raise Exception(u"Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel).encode('utf8'))
 		self.calcrest()
 	
 	@classmethod
@@ -281,9 +278,9 @@ class Lokal(object):
 	def zeige_thema(self):
 		p = self.problem
 		gl = self.glob
-		topr = PrettyTable(["Thema","Zeiten","Betreuer","Benötigt","Bringt bei","Beliebtheit","# Teilnehmer", "# Teilnehmer (gesamt)"])
+		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Teilnehmer", "# Teilnehmer (gesamt)"])
 		for t in p.themen:
-			topr.add_row([t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if gl.betreuer_themen[b,t]])," ".join([str(g.id) for g in p.gebiete if t in p.verwendende[g]])," ".join([str(g.id) for g in p.gebiete if t in p.beibringende[g]]), "%.1f" % p.thema_beliebtheit[t]," ".join([ str(len(self.teilnehmer_von[t,z])) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]),sum([ len(self.teilnehmer_von[t,z]) for z in p.zeiteinheiten if gl.betreuer_von[t,z]])])
+			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if gl.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t]," ".join([ str(len(self.teilnehmer_von[t,z])) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]),sum([ len(self.teilnehmer_von[t,z]) for z in p.zeiteinheiten if gl.betreuer_von[t,z]])])
 		print topr
 	
 	def zeige_guete(self):

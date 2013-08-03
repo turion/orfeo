@@ -141,14 +141,13 @@ class Global(object):
 		#TODO: Bei Bedarf hier noch Schranken auf thema_findet_so_oft_statt
 		
 		print("Optimierung")
-		guete = PulpMatrix("guete", (p.themen,p.zeiteinheiten), 0, 1, pulp.LpContinuous)
-		for g in p.gebiete:
-			if t in p.verwendende[g]:
-				for z2 in p.zeiteinheiten:
-					#varr = pulp.LpVariable("guete_helferr_{}_{}_{}".format(t.id, z2.id, g.id), 0, 1, pulp.LpInteger)
-					#prob += varr <= pulp.lpSum([thema_findet_dann_statt[b,z1] for b in p.beibringende[g] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
-					#prob += guete[t,z2] <= p.durchschnittskompetenz[g]+(1-p.durchschnittskompetenz[g])*varr
-					guete[t,z2] <= pulp.lpSum([thema_findet_dann_statt[b,z1]*t.gutegroesse() for b in p.beibringende[g] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
+		guete = PulpMatrix("guete", (p.themen,p.zeiteinheiten), 0, None, pulp.LpContinuous)
+		if t in p.themen:
+			for z2 in p.zeiteinheiten:
+				#varr = pulp.LpVariable("guete_helferr_{}_{}_{}".format(t.id, z2.id, g.id), 0, 1, pulp.LpInteger)
+				#prob += varr <= pulp.lpSum([thema_findet_dann_statt[b,z1] for b in p.beibringende[g] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
+				#prob += guete[t,z2] <= p.durchschnittskompetenz[g]+(1-p.durchschnittskompetenz[g])*varr
+				guete[t,z2] <= pulp.lpSum([thema_findet_dann_statt[v,z1]*t.gutegroesse() for v in p.thema_voraussetzungen[t] for z1 in p.zeiteinheiten if z1.stelle < z2.stelle])
 		
 		#for t in p.themen:
 			#for g in p.gebiete:
@@ -397,7 +396,7 @@ class Global(object):
 	
 	def zeige_thema(self):
 		p = self.problem
-		topr = PrettyTable(["Thema","Zeiten","Betreuer","Benötigt","Bringt bei","Beliebtheit"])
+		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit"])
 		for t in p.themen:
-			topr.add_row([t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(g.id) for g in p.gebiete if t in p.verwendende[g]])," ".join([str(g.id) for g in p.gebiete if t in p.beibringende[g]]), "%.1f" % p.thema_beliebtheit[t]])
+			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t]])
 		print topr
