@@ -159,6 +159,11 @@ class Global(object):
 		for t in p.themen:
 			prob += ueberfuellung[t] >= p.thema_beliebtheit[t] - pulp.lpSum([platz[t,z] for z in p.zeiteinheiten])
 		
+		#unterfuellung = PulpMatrix("unterfuellung", (p.themen,), 0, None, pulp.LpContinuous)
+		#for t in p.themen:
+			#prob += unterfuellung[t] >= -p.thema_beliebtheit[t] + pulp.lpSum([thema_findet_dann_statt[t,z]*t.gutegroesse() for z in p.zeiteinheiten])
+		
+		#beliebtheit = pulp.lpSum([-ueberfuellung[t] - 0.1*unterfuellung[t] for t in p.themen])
 		beliebtheit = pulp.lpSum([-ueberfuellung[t] for t in p.themen])
 		
 		#korrelationsmalus = 0
