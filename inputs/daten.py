@@ -325,6 +325,7 @@ alle_klassen = {"personen": Personen, "voraussetzungen": Voraussetzungen, "gebie
 
 from .__init__ import AbstractProblem
 class Problem(AbstractProblem):
+	"""Reine Testklasse, die dazu dient, die alten Daten aus dem Jahr 2012 zum testen zur Verfügung zu haben"""
 	def __init__(self):
 		jahr = 2012
 		relevante_anmeldungen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
@@ -339,9 +340,13 @@ class Problem(AbstractProblem):
 		raeume_ausnahmen = map(lambda x: x[0], session.query(RaeumeAusnahmen, Raeume).filter(RaeumeAusnahmen.raeume_id==Raeume.id).filter(Raeume.jahr==jahr).all())
 		themen_ = [thema for thema in themen if wunschthemen.filter_by(jahr=jahr, themen_id=thema.id).count()]
 		themen_.sort(key = lambda t : t.titel.lower())
-		gebiete_ = gebiete.all()
-		gebiete_.sort(key = lambda g : g.titel.lower())
 
+		# Direkte Themenabhängigkeiten aus Gebieten emulieren
+		voraussetzungen_ = []
+		for thema in themen_:
+			for voraussetzend in setzt_voraus.filter_by(themen_id=thema.id):
+				for voraussetzung in bringt_bei.filter_by(gebiete_id=voraussetzend.gebiete_id):
+					voraussetzungen_.append((thema, voraussetzung.themen))
 		## Mikhail hardgecodet
 		self.mikhail = personen.filter_by(id=132).one()
 		self.mikhail_1 = themen.filter_by(id=16).one()
@@ -358,4 +363,4 @@ class Problem(AbstractProblem):
 		themen_.append(self.mikhail_4)
 		self.mikhail_4.titel += " (sequel)"
 
-		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, raeume_, gebiete_, kompetenzen.all(), voraussetzungen.all(), session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, raeume_, kompetenzen.all(), voraussetzungen_, session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)

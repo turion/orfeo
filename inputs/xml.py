@@ -2,5 +2,5 @@
 # -*- coding: utf-8 -*-
 
 import orfeo
-class Problem(orfeo.Problem):
+class Problem(orfeo.AbstractProblem):
 	pass

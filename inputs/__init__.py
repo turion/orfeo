@@ -1,9 +1,6 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
-#import daten
-#from daten import NimmtTeil, Personen, Wunschthemen, Raeume, RaeumeAusnahmen, Zeiteinheiten
-
 import pulp
 import itertools
 import copy
@@ -27,11 +24,14 @@ def machetupel(a):
 def lpsolver():
 	if pulp.GUROBI().available():
 		return pulp.GUROBI()
-	else:
+	elif pulp.GLPK().available():
 		return pulp.GLPK()
+	else:
+		raise ValueError("Kein LP-Optimierer gefunden!")
 
-# Stellt eine Matrix dar, die sich sowohl mit Datenbankobjekten als auch mit deren IDs indizieren lässt
+
 class Bessere(object):
+	"""Stellt eine Matrix dar, die sich sowohl mit Datenbankobjekten als auch mit deren IDs indizieren lässt"""
 	def __init__(self, indizes, default):
 		self.indizes = indizes
 		self.matrix = {tuple(map(macheint, a)): copy.deepcopy(default) for a in itertools.product(*indizes)}
@@ -50,29 +50,29 @@ class Bessere(object):
 		keys = tuple(map(macheint, keys))
 		self.matrix[keys] = value
 
-# Eine Matrix bestehend aus Variablen der linearen Optimierung
+
 class PulpMatrix(Bessere):
+	"""Eine Matrix bestehend aus Variablen der linearen Optimierung"""
 	def __init__(self, name, indizes, *args, **kwargs):
 		Bessere.__init__(self, indizes, None)
 		for a in itertools.product(*indizes):
 			self[a] = pulp.LpVariable(name+"_".join(map(lambda x: str(macheint(x)), a)), *args, **kwargs)
 		self.name = name
-	# Gibt eine Matrix mit den optimalen Variablen-Werten zurück
 	def werte(self):
+		"""Gibt eine Matrix mit den optimalen Variablen-Werten zurück"""
 		r = Bessere(self.indizes, None)
 		for a in itertools.product(*self.indizes):
 			r[a] = pulp.value(self[a])
 		return r
 
-# Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)
 class AbstractProblem(object):
-	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, gebiete, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen): #TODO: Gebiete sollten hier gar nicht auftauchen. In inputs.daten.Problem sollten die Gebietsabhängigkeiten in direkte Abhängigkeiten zwischen den Themen aufgelöst werden.
+	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
+	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
 		self.themen = themen
 		self.betreuer = betreuer
 		self.schueler = schueler
 		self.zeiteinheiten = zeiteinheiten
 		self.raeume = raeume
-		self.gebiete = gebiete
 		self.kompetenzen = kompetenzen
 		self.voraussetzungen = voraussetzungen
 		self.ausnahmen = ausnahmen
