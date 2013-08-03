@@ -231,7 +231,7 @@ class Lokal(object):
 				for s in p.schueler:
 					for z in p.zeiteinheiten:
 						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
-							if self.belegungen[s,t,z] > self.kennt_thema[s,v,z]:
+							if self.belegungen[s,t,z] > kennt_thema[s,v,z]:
 								raise Exception(u"Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel).encode('utf8'))
 		self.calcrest()
 	
