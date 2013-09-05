@@ -90,15 +90,15 @@ class Global(object):
 		for t in p.themen:
 			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten])
 		
-		# Mikhails hardgecodet:
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,10] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,11] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,12] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,13] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,14] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,15] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,16] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,17] == 1
+		## Mikhails hardgecodet:
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_1,10] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_2,11] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_3,12] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_4,13] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_1,14] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_2,15] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_3,16] == 1
+		#prob += betreuer_belegungen[p.mikhail,p.mikhail_4,17] == 1
 		
 		#korrelationen_einbeziehen = False
 		#if korrelationen_einbeziehen:

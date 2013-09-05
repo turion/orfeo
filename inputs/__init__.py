@@ -90,8 +90,8 @@ class AbstractProblem(object):
 			W = wunschthemen[a.id]
 			for w in W:
 				self.pref[a,w.themen_id] = w.gerne or 0 # FIXME das "or 0" ist sehr seltsam und sollte nicht gebraucht werden
-				if w.themen_id == self.mikhail_3.id:
-					self.pref[a,self.mikhail_4] = w.gerne or 0
+				#if w.themen_id == self.mikhail_3.id:
+					#self.pref[a,self.mikhail_4] = w.gerne or 0
 		# Wie gerne a Thema t mag (zeitlich)
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:

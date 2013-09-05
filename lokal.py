@@ -45,9 +45,9 @@ class Lokal(object):
 				la = pulp.lpSum([ belegungen[a, t, z] for t in p.themen ]) - p.istda[a, z]
 				prob += la <= 0
 				langeweile.append(1000*la)
-				# Mikhail
-				if zeitdavor is not None:
-					prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
+				## Mikhail
+				#if zeitdavor is not None:
+					#prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
 				zeitdavor = z
 		langeweile = pulp.lpSum(langeweile)
 		print 1

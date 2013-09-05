@@ -28,8 +28,7 @@ from lokal import Lokal
 #import daten
 
 if args.xml:
-	import inputs.xml as input_backend
-	quit("Zur Zeit noch nicht unterstützt")
+	import inputs.xmlsource as input_backend
 else:
 	import inputs.daten as input_backend
 problem = input_backend.Problem()
