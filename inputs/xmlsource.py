@@ -98,7 +98,9 @@ class Problem(AbstractProblem):
 		for wx in wxml.getElementsByTagName("node"):
 			pid = int(getText(wx.getElementsByTagName("Benutzer")[0]))
 			if pid in pids: # FIXME wieso wird das gebraucht?
-				wunschthemen[pid].append(Wunschthemen(themen_id=int(getText(wx.getElementsByTagName("Thema")[0])),
-				                                      gerne=int(getText(wx.getElementsByTagName("Wahl")[0]))))
+				w = int(getText(wx.getElementsByTagName("Wahl")[0]))
+				if w%25 == 0:
+					wunschthemen[pid].append(Wunschthemen(themen_id=int(getText(wx.getElementsByTagName("Thema")[0])),
+					                                      gerne=w))
 		raeume_ausnahmen = [] # TODO
 		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)

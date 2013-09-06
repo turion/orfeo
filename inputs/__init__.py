@@ -96,7 +96,7 @@ class AbstractProblem(object):
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
 			for t in self.themen:
-				self.pref_zeit[a,t] = {-1 : 0.0001, 0 : 1., 1 : 3., 2 : 8.}[self.pref[a,t]]
+				self.pref_zeit[a,t] = {-1 : 0.0001, 0 : 1., 1 : 3., 2 : 5., 3 : 8.}[self.pref[a,t]]
 		# Wie gerne a Thema t mag (normiert)
 		self.pref_norm = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
