@@ -124,6 +124,11 @@ class AbstractProblem(object):
 		self.raumverfuegbar = Bessere((self.raeume,self.zeiteinheiten), 1)
 		for ausnahme in raeume_ausnahmen:
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
+		
+		for t in self.themen:
+			bs = [b.cname() for b in self.betreuer if self.pref[b,t] == 3]
+			if len(bs) != 1:
+				raise Exception(u"Thema {} hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, ", ".join(bs)))
 	
 	def printinfos(self):
 		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten"
