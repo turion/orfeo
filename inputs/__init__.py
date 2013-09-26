@@ -90,8 +90,8 @@ class AbstractProblem(object):
 			W = wunschthemen[a.id]
 			for w in W:
 				self.pref[a,w.themen_id] = w.gerne or 0 # FIXME das "or 0" ist sehr seltsam und sollte nicht gebraucht werden
-				#if w.themen_id == self.mikhail_3.id:
-					#self.pref[a,self.mikhail_4] = w.gerne or 0
+				if w.themen_id == self.mikhail_3.id:
+					self.pref[a,self.mikhail_4] = w.gerne or 0
 		# Wie gerne a Thema t mag (zeitlich)
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
@@ -125,10 +125,18 @@ class AbstractProblem(object):
 		for ausnahme in raeume_ausnahmen:
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
 		
+		topr = PrettyTable(["Thema","Betreuer"])
 		for t in self.themen:
-			bs = [b.cname() for b in self.betreuer if self.pref[b,t] == 3]
-			if len(bs) != 1:
-				raise Exception(u"Thema {} hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, ", ".join(bs)))
+			bs = [b for b in self.betreuer if self.pref[b,t] == 3]
+			bsn = [b.cname() for b in bs]
+			topr.add_row([t.titel,("WARNING: " if len(bsn) > 1 else "")+", ".join(bsn)])
+			# TODO Wieder einfügen
+			#if len(bs) != 0:
+				#raise Exception(u"Thema {} ({}) hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, t.id, ", ".join(bs)).encode("utf8"))
+			if len(bs) > 1:
+				for b in bs[1:]:
+					self.pref[b,t] = 0
+		print topr
 	
 	def printinfos(self):
 		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten"

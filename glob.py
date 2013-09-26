@@ -34,7 +34,7 @@ class Global(object):
 		# Spezialräume
 		nurinraeumen = Bessere((p.themen,), [])
 		for r in p.raeume:
-			if r.themen_id: # Der Raum ist für ein spezielles Thema vorgesehen
+			if r.themen_id is not None: # Der Raum ist für ein spezielles Thema vorgesehen
 				nurinraeumen[r.themen_id] += [r]
 				for t in p.themen:
 					if t.id != r.themen_id: # Also werden alle anderen Themen dort nicht stattfinden
@@ -77,7 +77,7 @@ class Global(object):
 		# Betreuer-Präferenzen
 		for b in p.betreuer:
 			for t in p.themen:
-				if p.pref[b,t] == 2: # Unbedingt und sonst niemand
+				if p.pref[b,t] == 3: # Unbedingt und sonst niemand
 					# Das bedeutet, dass jedes Thema, das jemand unbedingt machen will, irgendwann angeboten wird (TODO so OK?)
 					prob += betreuer_themen[b,t] == 1
 					for ab in p.betreuer:
@@ -90,15 +90,17 @@ class Global(object):
 		for t in p.themen:
 			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten])
 		
-		## Mikhails hardgecodet:
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_1,10] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_2,11] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_3,12] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_4,13] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_1,14] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_2,15] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_3,16] == 1
-		#prob += betreuer_belegungen[p.mikhail,p.mikhail_4,17] == 1
+		# Mikhails hardgecodet:
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[0]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[1]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[2]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[3]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[4]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[5]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[6]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[7]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[8]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[9]] == 1
 		
 		#korrelationen_einbeziehen = False
 		#if korrelationen_einbeziehen:
@@ -339,7 +341,7 @@ class Global(object):
 		# Betreuer-Präferenzen
 		for b in p.betreuer:
 			for t in p.themen:
-				if p.pref[b,t] == 2: # Unbedingt und sonst niemand
+				if p.pref[b,t] == 3: # Unbedingt und sonst niemand
 					# Das bedeutet, dass jedes Thema, das jemand unbedingt machen will, irgendwann angeboten wird (TODO so OK?)
 					if self.betreuer_themen[b,t] != 1:
 						raise Exception(u"Betreuer {} bekommt Thema {} nicht, obwohl er es unbedingt will".format(b.cname(),t.titel).encode('utf8'))

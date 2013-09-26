@@ -8,7 +8,7 @@ from inputs import Bessere, PulpMatrix, lpsolver
 
 # Wandelt den String a in ein für eine TeX-Datei passendes Format um
 def tex(a):
-	a = a.replace("_","\\_")
+	a = a.replace("_","\\_").replace("&","\\&")
 	b = ""
 	anf = 0
 	for i in xrange(len(a)):
@@ -45,9 +45,9 @@ class Lokal(object):
 				la = pulp.lpSum([ belegungen[a, t, z] for t in p.themen ]) - p.istda[a, z]
 				prob += la <= 0
 				langeweile.append(1000*la)
-				## Mikhail
-				#if zeitdavor is not None:
-					#prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
+				# Mikhail
+				if zeitdavor is not None:
+					prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
 				zeitdavor = z
 		langeweile = pulp.lpSum(langeweile)
 		print 1
@@ -287,7 +287,7 @@ class Lokal(object):
 		p = self.problem
 		gl = self.glob
 		
-		anzpref = {-1:0,0:0,1:0,2:0,"Langeweile":0}
+		anzpref = {-1:0,0:0,1:0,2:0,3:0,"Langeweile":0}
 		for z in p.zeiteinheiten:
 			for a in p.schueler:
 				if self.stundenplan[a,z]:
@@ -296,7 +296,7 @@ class Lokal(object):
 					anzpref["Langeweile"] += 1
 
 		topr = PrettyTable(["Präferenz","Anzahl"])
-		for g in ["Langeweile",-1,0,1,2]:
+		for g in ["Langeweile",-1,0,1,2,3]:
 			topr.add_row([g,anzpref[g]])
 		print topr
 		
@@ -342,6 +342,10 @@ class Lokal(object):
 			ersetzen = {"name": a.cname()}
 			for z in p.zeiteinheiten:
 				zn = z.name.replace("-","--")
+				zn = zn.replace("Do ", "")
+				zn = zn.replace("Fr ", "")
+				zn = zn.replace("Sa ", "")
+				zn = zn.replace("So ", "")
 				if zn[1] == ':':
 					zn = "\\phantom{1}"+tex(zn)
 				if self.stundenplan[a,z]:

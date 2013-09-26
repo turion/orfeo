@@ -11,7 +11,7 @@ class Personen(object):
 		self.name = name
 		self.username = username
 	def cname(self):
-		return "{} ({})".format(self.name, self.username)
+		return self.name
 
 
 class Themen(object):
@@ -44,6 +44,18 @@ class Wunschthemen(object):
 		self.gerne = gerne
 
 
+class NimmtTeil(object):
+	def __init__(self, personen):
+		self.personen = personen
+		self.personen_id = personen.id
+
+
+def Ausnahmen(object):
+	def __init__(self, nimmt_teil, zeiteinheiten_id):
+		self.nimmt_teil = nimmt_teil
+		self.zeiteinheiten_id = zeiteinheiten_id
+
+
 def getText(node):
 	for c in node.childNodes:
 		if c.nodeType == c.TEXT_NODE:
@@ -53,37 +65,83 @@ def getText(node):
 
 class Problem(AbstractProblem):
 	def __init__(self):
-		txml = minidom.parse("inputs/themenauswahl.xml")
-		themen = []
-		tids = []
-		for tx in txml.getElementsByTagName("node"):
-			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
-			           titel=getText(tx.getElementsByTagName("Thema")[0]),
-			           beschreibung="Beschreibung nicht vorhanden!")
-			themen.append(t)
-			tids.append(t.id)
+		rxml = minidom.parse("inputs/r_ume.xml")
+		raeume = []
+		rnames = {}
+		for ri, rx in enumerate(rxml.getElementsByTagName("node")):
+			r = Raeume(id=ri,
+			           name=getText(rx.getElementsByTagName("Name")[0]),
+			           max_personen=int(getText(rx.getElementsByTagName("Raumgr-e")[0])),
+			           themen_id=None)
+			raeume.append(r)
+			rnames[r.name] = r
+			# TODO Beamer
+		raeume.sort(key=lambda x:r.name)
 		pxml = minidom.parse("inputs/teilnehmer_und_betreuer.xml")
 		schueler = []
 		betreuer = []
-		pids = []
+		pids = {}
 		for u in pxml.getElementsByTagName("user"):
 			p = Personen(id=int(getText(u.getElementsByTagName("id")[0])),
 			             name=getText(u.getElementsByTagName("Name")[0]),
 			             username=getText(u.getElementsByTagName("Nick")[0]))
-			pids.append(p.id)
+			pids[p.id] = p
 			rollen = getText(u.getElementsByTagName("Rollen")[0])
-			if "Organisator" in rollen:
+			if "Betreuer" in rollen:
 				betreuer.append(p)
 			else:
 				schueler.append(p)
+		schueler.sort(key=lambda x:x.name)
+		betreuer.sort(key=lambda x:x.name)
+		txml = minidom.parse("inputs/themenauswahl.xml")
+		themen = []
+		tids = {}
+		for tx in txml.getElementsByTagName("node"):
+			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
+			           titel=getText(tx.getElementsByTagName("Thema")[0]),
+			           beschreibung="Beschreibung nicht vorhanden!")
+			t.titel = t.titel.replace(u"lüs", u"lüs")
+			themen.append(t)
+			tids[t.id] = t
+			rn = getText(tx.getElementsByTagName("Thema")[0])
+			if rn in rnames:
+				r = rnames[rn]
+				if r.themen_id is not None:
+					raise Exception("Mehrere Themen teilen sich einen Spezialraum")
+				r.themen_id = t.id
+			# TODO Beamer
+		# Mikhail hardgecodet
+		self.mikhail = [p for p in betreuer if p.id == 442][0]
+		self.mikhail_1 = [t for t in themen if t.id == 304][0]
+		self.mikhail_2 = [t for t in themen if t.id == 305][0]
+		self.mikhail_3 = [t for t in themen if t.id == 306][0]
+		self.mikhail_4 = Themen(id=self.mikhail_3.id + 100000,
+		                        titel=self.mikhail_3.titel + " (sequel)",
+		                        beschreibung=self.mikhail_3.beschreibung)
+		themen.append(self.mikhail_4)
+		themen.sort(key=lambda x: x.titel)
 		zeiteinheiten = []
-		for i, n in enumerate(["Do 16:00--17:45", "Do 18:00--19:45", "Fr 10:00--11:45", "Fr 12:00--13:45", "Sa 10:00--11:45", "Sa 12:00--13:45", "Sa 15:00--16:45", "Sa 17:00--18:45", "So 9:30--11:15", "So 11:30--13:15"]):
-			zeiteinheiten.append(Zeiteinheiten(id=i,
-			                                   stelle=i,
-			                                   name=n))
-		raeume = [] # TODO
-		for i in xrange(10):
-			raeume.append(Raeume(i, "Raum {}".format(i), 30, None))
+		zids = {}
+		zxml = minidom.parse("inputs/zeiteinheiten.xml")
+		for zx in zxml.getElementsByTagName("node"):
+			if getText(zx.getElementsByTagName("Physikeinheit")[0]) == "Ja":
+				name = getText(zx.getElementsByTagName("Zeit")[0])
+				z = Zeiteinheiten(id=int(getText(zx.getElementsByTagName("id")[0])),
+					              name=name,
+					              stelle=None)
+				zeiteinheiten.append(z)
+				zids[z.id] = z
+		zeiteinheiten.sort(key=lambda z: z.name)
+		for i, z in enumerate(zeiteinheiten):
+			z.stelle = i
+			z.name = z.name.replace("2013-10-03", "Do")
+			z.name = z.name.replace("2013-10-04", "Fr")
+			z.name = z.name.replace("2013-10-05", "Sa")
+			z.name = z.name.replace("2013-10-06", "So")
+			z.name = z.name.replace("bis", "-")
+			z.name = z.name.replace(":00 "," ")
+			if z.name.endswith(":00"):
+				z.name = z.name[:-3]
 		kompetenzen = [] # Werden glaube ich gar nicht mehr verwendet!!!
 		vxml = minidom.parse("inputs/alle_voraussetzungen.xml")
 		voraussetzungen = []
@@ -91,8 +149,7 @@ class Problem(AbstractProblem):
 			a = int(getText(v.getElementsByTagName("voraussetzend")[0]))
 			b = int(getText(v.getElementsByTagName("Voraussetzung")[0]))
 			if a in tids and b in tids: # FIXME wieso wird das gebraucht?
-				voraussetzungen.append((a,b))
-		personen_ausnahmen = [] # TODO
+				voraussetzungen.append((a,tids[b]))
 		wxml = minidom.parse("inputs/themenwahlen.xml")
 		wunschthemen = {p.id: [] for p in schueler+betreuer}
 		for wx in wxml.getElementsByTagName("node"):
@@ -101,6 +158,14 @@ class Problem(AbstractProblem):
 				w = int(getText(wx.getElementsByTagName("Wahl")[0]))
 				if w%25 == 0:
 					wunschthemen[pid].append(Wunschthemen(themen_id=int(getText(wx.getElementsByTagName("Thema")[0])),
-					                                      gerne=w))
-		raeume_ausnahmen = [] # TODO
+														gerne={0: -1, 25: 0, 50: 1, 75: 2, 100: 3}[w]))
+		personen_ausnahmen = []
+		axml = minidom.parse("inputs/verpassen.xml")
+		for ax in wxml.getElementsByTagName("user"):
+			pid = int(getText(ax.getElementsByTagName("Benutzer")[0]))
+			zid = int(getText(ax.getElementsByTagName("Zeiteinheit")[0]))
+			if pid in pids and zid in zids:
+				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
+										zeiteinheiten_id=zid))
+		raeume_ausnahmen = [] # TODO (nicht 2013)
 		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
