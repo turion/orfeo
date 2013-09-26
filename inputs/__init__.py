@@ -88,8 +88,8 @@ class AbstractProblem(object):
 		self.pref = Bessere((self.betreuer+self.schueler,self.themen), 0)
 		for a in (self.betreuer+self.schueler):
 			W = wunschthemen[a.id]
-			#if 0 < len(W) != len(self.themen):
-				#print u"{} hat nur zu {} von {} Themen eine Meinung".format(a.cname(), len(W), len(self.themen)).encode("utf8")
+			if 0 < len(W) != len(self.themen):
+				print u"{} hat nur zu {} von {} Themen eine Meinung".format(a.cname(), len(W), len(self.themen)).encode("utf8")
 			if len(W) == 0:
 				print u"WARNUNG: {} hat überhaupt keine Meinung".format(a.cname()).encode("utf8")
 			for w in W:
