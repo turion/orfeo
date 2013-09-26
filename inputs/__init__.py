@@ -86,16 +86,15 @@ class AbstractProblem(object):
 
 		# Wie gerne a Thema t mag
 		self.pref = Bessere((self.betreuer+self.schueler,self.themen), 0)
+		hatmeinung = Bessere((self.betreuer+self.schueler,self.themen), 0)
 		for a in (self.betreuer+self.schueler):
 			W = wunschthemen[a.id]
-			if 0 < len(W) != len(self.themen):
-				print u"{} hat nur zu {} von {} Themen eine Meinung".format(a.cname(), len(W), len(self.themen)).encode("utf8")
-			if len(W) == 0:
-				print u"WARNUNG: {} hat überhaupt keine Meinung".format(a.cname()).encode("utf8")
 			for w in W:
 				self.pref[a,w.themen_id] = w.gerne or 0 # FIXME das "or 0" ist sehr seltsam und sollte nicht gebraucht werden
+				hatmeinung[a,w.themen_id] = 1
 				if w.themen_id == self.mikhail_3.id:
 					self.pref[a,self.mikhail_4] = w.gerne or 0
+					hatmeinung[a,self.mikhail_4] = 1
 		# Wie gerne a Thema t mag (zeitlich)
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
@@ -128,6 +127,12 @@ class AbstractProblem(object):
 		self.raumverfuegbar = Bessere((self.raeume,self.zeiteinheiten), 1)
 		for ausnahme in raeume_ausnahmen:
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
+		
+		topr = PrettyTable(["Person", "# Themen, zu denen Meinung existiert", "Fehlende Themen"])
+		for a in self.betreuer+self.schueler:
+			hm = sum(hatmeinung[a,t] for t in self.themen)
+			topr.add_row([a.cname(), "MEINUNGSLOS" if hm == 0 else (("" if hm != len(self.themen) else "")+str(hm)), ", ".join([str(t.id) for t in self.themen if not hatmeinung[a,t]]) if hm > len(self.themen)-5 else ("" if hm == len(self.themen) else "...")])
+		print topr
 		
 		topr = PrettyTable(["Thema","Betreuer"])
 		for t in self.themen:
