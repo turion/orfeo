@@ -15,10 +15,11 @@ class Personen(object):
 
 
 class Themen(object):
-	def __init__(self, id, titel, beschreibung):
+	def __init__(self, id, titel, beschreibung, beamer):
 		self.id = id
 		self.titel = titel
 		self.beschreibung = beschreibung
+		self.beamer = beamer
 	def gutegroesse(self):
 		return 15 # TODO sinnvollere größe (z.B. abhängig davon, ob's ein Experiment ist)
 
@@ -31,11 +32,12 @@ class Zeiteinheiten(object):
 
 
 class Raeume(object):
-	def __init__(self, id, name, max_personen, themen_id):
+	def __init__(self, id, name, max_personen, themen_id, beamer):
 		self.id = id
 		self.name = name
 		self.max_personen = max_personen
 		self.themen_id = themen_id
+		self.beamer = beamer
 
 
 class Wunschthemen(object):
@@ -72,10 +74,10 @@ class Problem(AbstractProblem):
 			r = Raeume(id=ri,
 			           name=getText(rx.getElementsByTagName("Name")[0]),
 			           max_personen=int(getText(rx.getElementsByTagName("Raumgr-e")[0])),
-			           themen_id=None)
+			           themen_id=None,
+			           beamer=(getText(rx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			raeume.append(r)
 			rnames[r.name] = r
-			# TODO Beamer
 		raeume.sort(key=lambda x:r.name)
 		pxml = minidom.parse("inputs/teilnehmer_und_betreuer.xml")
 		schueler = []
@@ -99,7 +101,8 @@ class Problem(AbstractProblem):
 		for tx in txml.getElementsByTagName("node"):
 			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
-			           beschreibung="Beschreibung nicht vorhanden!")
+			           beschreibung="Beschreibung nicht vorhanden!",
+			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			t.titel = t.titel.replace(u"lüs", u"lüs")
 			themen.append(t)
 			tids[t.id] = t
@@ -109,7 +112,6 @@ class Problem(AbstractProblem):
 				if r.themen_id is not None:
 					raise Exception("Mehrere Themen teilen sich einen Spezialraum")
 				r.themen_id = t.id
-			# TODO Beamer
 		# Mikhail hardgecodet
 		self.mikhail = [p for p in betreuer if p.id == 442][0]
 		self.mikhail_1 = [t for t in themen if t.id == 304][0]
@@ -117,7 +119,8 @@ class Problem(AbstractProblem):
 		self.mikhail_3 = [t for t in themen if t.id == 306][0]
 		self.mikhail_4 = Themen(id=self.mikhail_3.id + 100000,
 		                        titel=self.mikhail_3.titel + " (sequel)",
-		                        beschreibung=self.mikhail_3.beschreibung)
+		                        beschreibung=self.mikhail_3.beschreibung,
+		                        beamer=self.mikhail_3.beamer)
 		themen.append(self.mikhail_4)
 		themen.sort(key=lambda x: x.titel)
 		zeiteinheiten = []

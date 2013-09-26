@@ -48,6 +48,14 @@ class Global(object):
 						for z in p.zeiteinheiten:
 							prob += raum_belegungen[r,t,z] == 0
 		
+		# Themen, die einen Beamer brauchen, nur in beamerbehafteten Räumen stattfinden lassen
+		for t in p.themen:
+			if t.beamer:
+				for r in p.raeume:
+					if not r.beamer:
+						for z in p.zeiteinheiten:
+							prob += raum_belegungen[r,t,z] == 0
+		
 		
 		print("Betreuer")
 		betreuer_belegungen = PulpMatrix("betreuer_belegungen", (p.betreuer, p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
