@@ -69,15 +69,15 @@ class Problem(AbstractProblem):
 	def __init__(self):
 		rxml = minidom.parse("inputs/r_ume.xml")
 		raeume = []
-		rnames = {}
-		for ri, rx in enumerate(rxml.getElementsByTagName("node")):
-			r = Raeume(id=ri,
+		rids = {}
+		for rx in rxml.getElementsByTagName("node"):
+			r = Raeume(id=int(getText(rx.getElementsByTagName("id")[0])),
 			           name=getText(rx.getElementsByTagName("Name")[0]),
 			           max_personen=int(getText(rx.getElementsByTagName("Raumgr-e")[0])),
 			           themen_id=None,
 			           beamer=(getText(rx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			raeume.append(r)
-			rnames[r.name] = r
+			rids[r.id] = r
 		raeume.sort(key=lambda x:r.name)
 		pxml = minidom.parse("inputs/teilnehmer_und_betreuer.xml")
 		schueler = []
@@ -99,6 +99,8 @@ class Problem(AbstractProblem):
 		themen = []
 		tids = {}
 		for tx in txml.getElementsByTagName("node"):
+			if int(getText(tx.getElementsByTagName("Bereich")[0])) in [315, 13]:
+				continue
 			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
 			           beschreibung="Beschreibung nicht vorhanden!",
@@ -106,12 +108,14 @@ class Problem(AbstractProblem):
 			t.titel = t.titel.replace(u"lüs", u"lüs")
 			themen.append(t)
 			tids[t.id] = t
-			rn = getText(tx.getElementsByTagName("Thema")[0])
-			if rn in rnames:
-				r = rnames[rn]
-				if r.themen_id is not None:
-					raise Exception("Mehrere Themen teilen sich einen Spezialraum")
-				r.themen_id = t.id
+			rid = getText(tx.getElementsByTagName("Raum")[0])
+			if rid != '':
+				rid = int(rid)
+				if rid in rids:
+					r = rids[rid]
+					if r.themen_id is not None:
+						raise Exception("Mehrere Themen teilen sich einen Spezialraum")
+					r.themen_id = t.id
 		# Mikhail hardgecodet
 		self.mikhail = [p for p in betreuer if p.id == 442][0]
 		self.mikhail_1 = [t for t in themen if t.id == 304][0]
