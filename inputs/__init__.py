@@ -67,11 +67,12 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
+	def __init__(self, themen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
 		self.themen = themen
 		self.betreuer = betreuer
 		self.schueler = schueler
 		self.zeiteinheiten = zeiteinheiten
+		self.nichtphysikzeiteinheiten = nichtphysikzeiteinheiten
 		self.raeume = raeume
 		self.kompetenzen = kompetenzen
 		self.voraussetzungen = voraussetzungen

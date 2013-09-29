@@ -8,7 +8,8 @@ from inputs import Bessere, PulpMatrix, lpsolver
 
 # Wandelt den String a in ein für eine TeX-Datei passendes Format um
 def tex(a):
-	a = a.replace("_","\\_").replace("&","\\&")
+	a = a.replace(r"""<br />"""+"\n"+r"""Mehr dazu <a href="/content/exkursionen-0">hier</a>.""","")
+	a = a.replace("_","\\_").replace("&","\\&").replace("<p>","").replace("</p>","").replace("<br />","\\newline")
 	b = ""
 	anf = 0
 	for i in xrange(len(a)):
@@ -340,20 +341,26 @@ class Lokal(object):
 			stemplate = stundenplan_einzeln_datei.read().decode('utf8')
 		for a in p.betreuer+p.schueler:
 			ersetzen = {"name": a.cname()}
+			def convert(n):
+				n = n.replace("Do ", "")
+				n = n.replace("Fr ", "")
+				n = n.replace("Sa ", "")
+				n = n.replace("So ", "")
+				if n[1] == ':':
+					n = "\\phantom{1}"+tex(n)
+				return n
 			for z in p.zeiteinheiten:
-				zn = z.name.replace("-","--")
-				zn = zn.replace("Do ", "")
-				zn = zn.replace("Fr ", "")
-				zn = zn.replace("Sa ", "")
-				zn = zn.replace("So ", "")
-				if zn[1] == ':':
-					zn = "\\phantom{1}"+tex(zn)
 				if self.stundenplan[a,z]:
 					t = self.stundenplan[a,z]
 					rn = gl.raum_von[t,z].name
-					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{ca. %d Teilnehmer}}" % (zn, tex(t.titel), tex(rn), len(self.teilnehmer_von[t,z]))
+					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{ca. %d Teilnehmer}}" % (convert(z.name), tex(t.titel), tex(rn), len(self.teilnehmer_von[t,z]))
 				else:
-					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{frei}{}}" % zn # TODO Pausenmusik wieder reinnehmen?
+					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{frei}{}}" % convert(z.name) # TODO Pausenmusik wieder reinnehmen?
+			for z in p.nichtphysikzeiteinheiten:
+				if z.beschreibung != "":
+					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort), tex(z.beschreibung))
+				else:
+					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort))
 			schuelerplaene += stemplate % ersetzen
 		file("stundenplan-ergebnis.tex","w").write((template % {"schueler": schuelerplaene}).encode('utf8'))
 		subprocess.call(["latexmk","-pdf","stundenplan-ergebnis.tex","-silent"])

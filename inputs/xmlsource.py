@@ -25,10 +25,13 @@ class Themen(object):
 
 
 class Zeiteinheiten(object):
-	def __init__(self, id, stelle, name):
+	def __init__(self, id, stelle, name, beschreibung=None, titel=None, ort=None):
 		self.id = id
 		self.stelle = stelle
 		self.name = name
+		self.beschreibung = beschreibung
+		self.titel = titel
+		self.ort = ort
 
 
 class Raeume(object):
@@ -136,27 +139,34 @@ class Problem(AbstractProblem):
 		themen.append(self.mikhail_4)
 		themen.sort(key=lambda x: x.titel)
 		zeiteinheiten = []
+		nichtphysikzeiteinheiten = []
 		zids = {}
 		zxml = minidom.parse("inputs/zeiteinheiten.xml")
 		for zx in zxml.getElementsByTagName("node"):
 			if getText(zx.getElementsByTagName("Physikeinheit")[0]) == "Ja":
-				name = getText(zx.getElementsByTagName("Zeit")[0])
 				z = Zeiteinheiten(id=int(getText(zx.getElementsByTagName("id")[0])),
-					              name=name,
+					              name=getText(zx.getElementsByTagName("Zeit")[0]),
 					              stelle=None)
 				zeiteinheiten.append(z)
 				zids[z.id] = z
-		zeiteinheiten.sort(key=lambda z: z.name)
-		for i, z in enumerate(zeiteinheiten):
-			z.stelle = i
-			z.name = z.name.replace("2013-10-03", "Do")
-			z.name = z.name.replace("2013-10-04", "Fr")
-			z.name = z.name.replace("2013-10-05", "Sa")
-			z.name = z.name.replace("2013-10-06", "So")
-			z.name = z.name.replace("bis", "-")
-			z.name = z.name.replace(":00 "," ")
-			if z.name.endswith(":00"):
-				z.name = z.name[:-3]
+			else:
+				z = Zeiteinheiten(id=int(getText(zx.getElementsByTagName("id")[0])),
+					              name=getText(zx.getElementsByTagName("Zeit")[0]),
+					              stelle=None,
+					              beschreibung=getText(zx.getElementsByTagName("Beschreibung")[0]),
+					              titel=getText(zx.getElementsByTagName("Titel")[0]),
+					              ort=getText(zx.getElementsByTagName("Ort")[0]))
+				nichtphysikzeiteinheiten.append(z)
+		for zs in [zeiteinheiten, nichtphysikzeiteinheiten]:
+			zs.sort(key=lambda z: z.name)
+			for i, z in enumerate(zs):
+				def convert(r):
+					from datetime import datetime, timedelta
+					r = datetime.strptime(r, "%Y-%m-%d %H:%M:%S")
+					r += timedelta(hours=2)  # Wegen Zeitzonenproblemen...
+					return r.strftime("%a %H:%M").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
+				z.name = " -- ".join([convert(r) for r in z.name.split(" bis ")])
+				z.stelle = i
 		kompetenzen = [] # Werden glaube ich gar nicht mehr verwendet!!!
 		vxml = minidom.parse("inputs/alle_voraussetzungen.xml")
 		voraussetzungen = []
@@ -183,4 +193,4 @@ class Problem(AbstractProblem):
 				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
 										zeiteinheiten_id=zid))
 		raeume_ausnahmen = [] # TODO (nicht 2013)
-		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)

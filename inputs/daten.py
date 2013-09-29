@@ -363,4 +363,4 @@ class Problem(AbstractProblem):
 		themen_.append(self.mikhail_4)
 		self.mikhail_4.titel += " (sequel)"
 
-		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, raeume_, kompetenzen.all(), voraussetzungen_, session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, [], raeume_, kompetenzen.all(), voraussetzungen_, session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)
