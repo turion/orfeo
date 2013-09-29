@@ -146,6 +146,13 @@ class AbstractProblem(object):
 				for b in bs[1:]:
 					self.pref[b,t] = 0
 		print topr
+		
+		topr = PrettyTable(["Person", "Zeiten, zu denen sie abwesend ist"])
+		for a in self.betreuer+self.schueler:
+			nd = [str(z.stelle) for z in self.zeiteinheiten if not self.istda[a,z]]
+			if len(nd) > 0:
+				topr.add_row([a.cname(), ", ".join(nd)])
+		print topr
 	
 	def printinfos(self):
 		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten"
