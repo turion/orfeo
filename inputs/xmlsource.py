@@ -21,7 +21,7 @@ class Themen(object):
 		self.beschreibung = beschreibung
 		self.beamer = beamer
 	def gutegroesse(self):
-		return 15 # TODO sinnvollere größe (z.B. abhängig davon, ob's ein Experiment ist)
+		return 8 # TODO sinnvollere größe (z.B. abhängig davon, ob's ein Experiment ist)
 
 
 class Zeiteinheiten(object):
@@ -76,6 +76,14 @@ class Problem(AbstractProblem):
 			           max_personen=int(getText(rx.getElementsByTagName("Raumgr-e")[0])),
 			           themen_id=None,
 			           beamer=(getText(rx.getElementsByTagName("Beamer")[0]) == "Ja"))
+			raeume.append(r)
+			rids[r.id] = r
+		for ir in range(2):
+			r = Raeume(id=ir+10000,
+			           name="Raum {}".format(ir),
+			           max_personen=30,
+			           themen_id=None,
+			           beamer=False)
 			raeume.append(r)
 			rids[r.id] = r
 		raeume.sort(key=lambda x:r.name)
