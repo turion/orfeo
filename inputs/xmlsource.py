@@ -114,7 +114,7 @@ class Problem(AbstractProblem):
 				continue
 			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
-			           beschreibung="Beschreibung nicht vorhanden!",
+			           beschreibung=getText(tx.getElementsByTagName("Beschreibung")[0]),
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			t.titel = t.titel.replace(u"lüs", u"lüs")
 			themen.append(t)

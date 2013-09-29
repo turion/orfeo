@@ -10,6 +10,13 @@ from inputs import Bessere, PulpMatrix, lpsolver
 def tex(a):
 	a = a.replace(r"""<br />"""+"\n"+r"""Mehr dazu <a href="/content/exkursionen-0">hier</a>.""","")
 	a = a.replace("_","\\_").replace("&","\\&").replace("<p>","").replace("</p>","").replace("<br />","\\newline")
+	a = a.replace("<ul>", r"\begin{itemize}\itemsep1pt \parskip0pt \parsep0pt")
+	a = a.replace("</ul>", r"\end{itemize}")
+	a = a.replace("<li>", r"\item ")
+	a = a.replace("</li>", "")
+	a = a.replace("""<a href="http://www.orpheus-verein.de/sites/default/files/OSZ.pdf">http://www.orpheus-verein.de/sites/default/files/OSZ.pdf</a>""", "http://www.orpheus-verein.de/sites/default/files/OSZ.pdf")
+	a = a.replace("->", r" $\rightarrow$")
+	a = a.replace(u"”", "\"")
 	b = ""
 	anf = 0
 	for i in xrange(len(a)):
