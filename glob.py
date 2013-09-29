@@ -100,13 +100,10 @@ class Global(object):
 		
 		# Mikhails hardgecodet:
 		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[2]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[3]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[4]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[5]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[6]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[7]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[8]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[9]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[4]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[5]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[6]] == 1
+		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[7]] == 1
 		
 		#korrelationen_einbeziehen = False
 		#if korrelationen_einbeziehen:
