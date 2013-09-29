@@ -52,7 +52,7 @@ class NimmtTeil(object):
 		self.personen_id = personen.id
 
 
-def Ausnahmen(object):
+class Ausnahmen(object):
 	def __init__(self, nimmt_teil, zeiteinheiten_id):
 		self.nimmt_teil = nimmt_teil
 		self.zeiteinheiten_id = zeiteinheiten_id
@@ -168,7 +168,7 @@ class Problem(AbstractProblem):
 														gerne={0: -1, 25: 0, 50: 1, 75: 2, 100: 3}[w]))
 		personen_ausnahmen = []
 		axml = minidom.parse("inputs/verpassen.xml")
-		for ax in wxml.getElementsByTagName("user"):
+		for ax in axml.getElementsByTagName("user"):
 			pid = int(getText(ax.getElementsByTagName("Benutzer")[0]))
 			zid = int(getText(ax.getElementsByTagName("Zeiteinheit")[0]))
 			if pid in pids and zid in zids:
