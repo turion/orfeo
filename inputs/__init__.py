@@ -135,10 +135,10 @@ class AbstractProblem(object):
 		for ausnahme in raeume_ausnahmen:
 			self.raumverfuegbar[ausnahme.raeume_id, ausnahme.zeiteinheiten_id] = 0
 		
-		topr = PrettyTable(["Person", "# Themen, zu denen Meinung existiert", "Fehlende Themen"])
+		topr = PrettyTable(["Person", "# Themen, zu denen Meinung existiert", "Fehlende Themen"] + ["# Präf. = {}".format(p) for p in [-1,0,1,2,3]])
 		for a in self.betreuer+self.schueler:
 			hm = sum(hatmeinung[a,t] for t in self.themen)
-			topr.add_row([a.cname(), "MEINUNGSLOS" if hm == 0 else (("" if hm != len(self.themen) else "")+str(hm)), ", ".join([str(t.id) for t in self.themen if not hatmeinung[a,t]]) if hm > len(self.themen)-5 else ("" if hm == len(self.themen) else "...")])
+			topr.add_row([a.cname(), "MEINUNGSLOS" if hm == 0 else (("" if hm != len(self.themen) else "")+str(hm)), ", ".join([str(t.id) for t in self.themen if not hatmeinung[a,t]]) if hm > len(self.themen)-5 else ("" if hm == len(self.themen) else "...")] + [len([1 for t in self.themen if self.pref[a,t] == p]) for p in [-1,0,1,2,3]])
 		print topr
 		
 		topr = PrettyTable(["Thema","Betreuer","Spezialraum"])
