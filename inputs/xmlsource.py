@@ -82,14 +82,6 @@ class Problem(AbstractProblem):
 			           beamer=(getText(rx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			raeume.append(r)
 			rids[r.id] = r
-		for ir in range(2):
-			r = Raeume(id=ir+10000,
-			           name="Raum {}".format(ir),
-			           max_personen=30,
-			           themen_id=None,
-			           beamer=False)
-			raeume.append(r)
-			rids[r.id] = r
 		raeume.sort(key=lambda x:r.name)
 		pxml = minidom.parse("inputs/teilnehmer_und_betreuer.xml")
 		schueler = []
