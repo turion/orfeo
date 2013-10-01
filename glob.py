@@ -402,7 +402,7 @@ class Global(object):
 				if t:
 					topr.add_row([b.cname(), z.stelle, t.titel, self.raum_von[t,z].name, p.pref[b,t]])
 				else:
-					topr.add_row([b.cname(), z.stelle, "", "", ""])
+					topr.add_row([b.cname(), z.stelle, "" if not p.istda[b,z] else "---", "", ""])
 		print topr
 	
 	def zeige_thema(self):
