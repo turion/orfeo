@@ -286,9 +286,9 @@ class Lokal(object):
 	def zeige_thema(self):
 		p = self.problem
 		gl = self.glob
-		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Teilnehmer", "# Teilnehmer (gesamt)"])
+		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Komp.","# Teilnehmer", "ges. # T."])
 		for t in p.themen:
-			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if gl.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t]," ".join([ str(len(self.teilnehmer_von[t,z])) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]),sum([ len(self.teilnehmer_von[t,z]) for z in p.zeiteinheiten if gl.betreuer_von[t,z]])])
+			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if gl.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t], len([1 for s in p.schueler if p.pref[s,t] == -1])," ".join([ str(len(self.teilnehmer_von[t,z])) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]),sum([ len(self.teilnehmer_von[t,z]) for z in p.zeiteinheiten if gl.betreuer_von[t,z]])])
 		print topr
 	
 	def zeige_guete(self):

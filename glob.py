@@ -400,7 +400,7 @@ class Global(object):
 	
 	def zeige_thema(self):
 		p = self.problem
-		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit"])
+		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Kompetente"])
 		for t in p.themen:
-			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t]])
+			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t], len([1 for s in p.schueler if p.pref[s,t] == -1])])
 		print topr
