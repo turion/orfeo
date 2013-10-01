@@ -71,7 +71,7 @@ class Lokal(object):
 		#maxauslastung = pulp.LpVariable("maxauslastung", 0, None, pulp.LpContinuous)
 		for z in p.zeiteinheiten:
 			for t in p.themen:
-				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume])
+				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,12) * gl.raum_belegungen[r,t,z] for r in p.raeume])
 				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= maxauslastung * sum([gl.raum_belegungen[r,t,z] for r in p.raeume])
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) >= sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume])
