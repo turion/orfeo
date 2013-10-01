@@ -411,3 +411,10 @@ class Global(object):
 		for t in p.themen:
 			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t], len([1 for s in p.schueler if p.pref[s,t] == -1])])
 		print topr
+	
+	def zeige_raum(self):
+		p = self.problem
+		topr = PrettyTable(["Zeit","Freie Nicht-Spezial-Räume"])
+		for z in p.zeiteinheiten:
+			topr.add_row([z.name, ", ".join("{} ({})".format(r.name, r.id) for r in p.raeume if sum(self.raum_belegungen[r,t,z] for t in p.themen) == 0 and r.themen_id is None)])
+		print topr

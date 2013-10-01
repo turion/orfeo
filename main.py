@@ -14,6 +14,7 @@ parser.add_argument("-g", "--global", action="store_true", dest="glob", help="Be
 parser.add_argument("-gz", "--globalzeit", action="store_true", help="Zeit|Thema|Betreuer|Raum")
 parser.add_argument("-gb", "--globalbetreuer", action="store_true", help="Betreuer|Zeit|Thema|Raum|Präferenz")
 parser.add_argument("-gt", "--globalthema", action="store_true", help="Thema|Zeiten|Betreuer|Benötigt|Bringt bei|Beliebtheit")
+parser.add_argument("-gr", "--globalraum", action="store_true", help="Zeit|Raum")
 parser.add_argument("-l", "--lokal", action="store_true", help="Berechnet den lokalen Stundenplan (neu)")
 parser.add_argument("-lz", "--lokalzeit", action="store_true", help="Zeit|Thema|Betreuer|Raum|#Teilnehmer")
 parser.add_argument("-ls", "--lokalschueler", action="store_true", help="Schüler|Zeit|Thema|Raum|Präferenz")
@@ -45,6 +46,8 @@ if args.globalbetreuer:
 	glob.zeige_betreuer()
 if args.globalthema:
 	glob.zeige_thema()
+if args.globalraum:
+	glob.zeige_raum()
 lokal = None
 if args.lokal or args.glob:
 	lokal = Lokal.calculate(problem, glob)
