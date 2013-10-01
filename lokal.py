@@ -110,7 +110,7 @@ class Lokal(object):
 		schuelerphysikspass = Bessere((p.schueler,), 0)
 		for s in p.schueler:
 			schuelerphysikspass[s] = pulp.lpSum([schuelerthemen[s,t]*p.prefbetter[s,t] for t in p.themen])
-			prob += schuelerphysikspass[s] >= 0.7
+			prob += schuelerphysikspass[s] >= 0.6
 		physikspass = pulp.lpSum([schuelerphysikspass[s] for s in p.schueler])
 		print 6
 		#physikspass = pulp.LpVariable("physikspass", 0, None, pulp.LpContinuous)
