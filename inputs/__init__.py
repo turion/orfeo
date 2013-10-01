@@ -86,7 +86,7 @@ class AbstractProblem(object):
 				self.istda[ausnahme.nimmt_teil.personen_id, ausnahme.zeiteinheiten_id] = 0
 
 		# Wie gerne a Thema t mag
-		self.pref = Bessere((self.betreuer+self.schueler,self.themen), 0)
+		self.pref = Bessere((self.betreuer+self.schueler,self.themen), 1)
 		hatmeinung = Bessere((self.betreuer+self.schueler,self.themen), 0)
 		for a in (self.betreuer+self.schueler):
 			W = wunschthemen[a.id]
