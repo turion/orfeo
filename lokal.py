@@ -364,7 +364,12 @@ class Lokal(object):
 				if self.stundenplan[a,z]:
 					t = self.stundenplan[a,z]
 					rn = gl.raum_von[t,z].name
-					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{ca. %d Teilnehmer}}" % (convert(z.name), tex(t.titel), tex(rn), len(self.teilnehmer_von[t,z]))
+					beschr = "ca. %d Teilnehmer" % len(self.teilnehmer_von[t,z])
+					if a in p.betreuer:
+						beschr += ": " + ", ".join(s.cname() for s in self.teilnehmer_von[t,z])
+					else:
+						beschr += ", Betreuer: "+gl.betreuer_von[t,z].cname()
+					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(t.titel), tex(rn), beschr)
 				else:
 					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{frei}{}}" % convert(z.name) # TODO Pausenmusik wieder reinnehmen?
 			for z in p.nichtphysikzeiteinheiten:
