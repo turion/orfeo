@@ -107,7 +107,11 @@ class Lokal(object):
 		
 		# Die Funktion, nach der optimiert wird
 		# TODO Vielleicht "gerne == -1" stärker bestrafen
-		physikspass = pulp.lpSum([schuelerthemen[a,t]*p.prefbetter[a,t] for t in p.themen for a in p.schueler])
+		schuelerphysikspass = Bessere((p.schueler,), 0)
+		for s in p.schueler:
+			schuelerphysikspass[s] = pulp.lpSum([schuelerthemen[s,t]*p.prefbetter[s,t] for t in p.themen])
+			prob += schuelerphysikspass[s] >= 0.7
+		physikspass = pulp.lpSum([schuelerphysikspass[s] for s in p.schueler])
 		print 6
 		#physikspass = pulp.LpVariable("physikspass", 0, None, pulp.LpContinuous)
 		#for a in p.schueler:
