@@ -205,8 +205,9 @@ class Global(object):
 		for b in p.betreuer:
 			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(5,sum(p.istda[b,z] for z in p.zeiteinheiten))
 		# Jeder Betreuer sollte mindestens 2 verschiedene Themen haben
-		for b in p.betreuer:
-			prob += pulp.lpSum([betreuer_themen[b,t] for t in p.themen]) >= 2
+		# TODO Wieder einfügen, sobald möglich
+		#for b in p.betreuer:
+			#prob += pulp.lpSum([betreuer_themen[b,t] for t in p.themen]) >= 2
 		
 		#prob.writeLP("global.lp")
 		#prob.writeMPS("global.mps")
