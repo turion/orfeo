@@ -96,6 +96,12 @@ class AbstractProblem(object):
 				if w.themen_id == self.mikhail_3.id:
 					self.pref[a,self.mikhail_4] = w.gerne or 0
 					hatmeinung[a,self.mikhail_4] = 1
+		for a in self.betreuer:  # Gastbetreuer bekommen nichts, was sie nicht unbedingt wollen
+			if a.gastbetreuer:
+				for t in self.themen:
+					if self.pref[a,t] != 3:
+						self.pref[a,t] = -1
+					hatmeinung[a,t] = 1
 		# Wie gerne a Thema t mag (zeitlich)
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:

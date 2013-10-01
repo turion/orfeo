@@ -6,10 +6,11 @@ from .__init__ import AbstractProblem
 
 
 class Personen(object):
-	def __init__(self, id, name, username):
+	def __init__(self, id, name, username, gastbetreuer):
 		self.id = id
 		self.name = name
 		self.username = username
+		self.gastbetreuer = gastbetreuer
 	def cname(self):
 		return self.name
 
@@ -95,12 +96,13 @@ class Problem(AbstractProblem):
 		betreuer = []
 		pids = {}
 		for u in pxml.getElementsByTagName("user"):
+			rollen = getText(u.getElementsByTagName("Rollen")[0])
 			p = Personen(id=int(getText(u.getElementsByTagName("id")[0])),
 			             name=getText(u.getElementsByTagName("Name")[0]),
-			             username=getText(u.getElementsByTagName("Nick")[0]))
+			             username=getText(u.getElementsByTagName("Nick")[0]),
+			             gastbetreuer=("Gastbetreuer" in rollen))
 			pids[p.id] = p
-			rollen = getText(u.getElementsByTagName("Rollen")[0])
-			if "Betreuer" in rollen:
+			if "Betreuer" in rollen or "Gastbetreuer" in rollen:
 				betreuer.append(p)
 			else:
 				schueler.append(p)
