@@ -382,7 +382,9 @@ class Lokal(object):
 					beschr = "\n\n\\beschreibung{%s}" % beschr
 				ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}%s}" % (convert(z.name), tn, tex(rn), beschr)
 			for z in p.nichtphysikzeiteinheiten:
-				if z.beschreibung != "":
+				if z == p.exkursionenzeit and a in p.schueler:
+					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex("Exkursion: "+p.exkursionenzuordnung[a].titel if p.exkursionenzuordnung[a] else "frei"), "", "ca. %d Teilnehmer" % p.exkursionenfuelle[p.exkursionenzuordnung[a]])
+				elif z.beschreibung != "":
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort), tex(z.beschreibung))
 				else:
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort))

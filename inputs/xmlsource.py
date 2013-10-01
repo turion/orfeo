@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from xml.dom import minidom
-from .__init__ import AbstractProblem
+from prettytable import PrettyTable # Das ist ein Pythonpaket
+from .__init__ import AbstractProblem, Bessere
 
 
 class Personen(object):
@@ -103,24 +104,29 @@ class Problem(AbstractProblem):
 		txml = minidom.parse("inputs/themenauswahl.xml")
 		themen = []
 		tids = {}
+		exkursionen = []
+		exids = {}
 		for tx in txml.getElementsByTagName("node"):
-			if int(getText(tx.getElementsByTagName("Bereich")[0])) in [315, 13]:
-				continue
 			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
 			           beschreibung=getText(tx.getElementsByTagName("Beschreibung")[0]),
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			t.titel = t.titel.replace(u"lüs", u"lüs")
-			themen.append(t)
-			tids[t.id] = t
-			rid = getText(tx.getElementsByTagName("Raum")[0])
-			if rid != '':
-				rid = int(rid)
-				if rid in rids:
-					r = rids[rid]
-					if r.themen_id is not None:
-						raise Exception("Mehrere Themen teilen sich einen Spezialraum")
-					r.themen_id = t.id
+			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
+			if not bereich in [315, 13]:
+				themen.append(t)
+				tids[t.id] = t
+				rid = getText(tx.getElementsByTagName("Raum")[0])
+				if rid != '':
+					rid = int(rid)
+					if rid in rids:
+						r = rids[rid]
+						if r.themen_id is not None:
+							raise Exception("Mehrere Themen teilen sich einen Spezialraum")
+						r.themen_id = t.id
+			elif bereich == 315:
+				exkursionen.append(t)
+				exids[t.id] = t
 		# Mikhail hardgecodet
 		self.mikhail = [p for p in betreuer if p.id == 442][0]
 		self.mikhail_1 = [t for t in themen if t.id == 304][0]
@@ -151,6 +157,9 @@ class Problem(AbstractProblem):
 					              titel=getText(zx.getElementsByTagName("Titel")[0]),
 					              ort=getText(zx.getElementsByTagName("Ort")[0]))
 				nichtphysikzeiteinheiten.append(z)
+				zids[z.id] = z
+				if z.titel == "Exkursionen":
+					self.exkursionenzeit = z
 		for zs in [zeiteinheiten, nichtphysikzeiteinheiten]:
 			zs.sort(key=lambda z: z.name)
 			for i, z in enumerate(zs):
@@ -187,4 +196,47 @@ class Problem(AbstractProblem):
 				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
 										zeiteinheiten_id=zid))
 		raeume_ausnahmen = [] # TODO (nicht 2013)
+		self.allezeiteinheiten = zeiteinheiten+nichtphysikzeiteinheiten
+		self.exkursionen = exkursionen
+		self.allethemen = themen+exkursionen
 		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
+		self.macheexkursionen()
+		
+	def macheexkursionen(self):
+		import random
+		random.seed(42)
+		# Exkursionen zuordnen
+		self.exkursionenfuelle = Bessere((self.exkursionen,), 0)
+		self.exkursionenzuordnung = Bessere((self.schueler,), None)
+		anzpref = {-1: 0, 0: 0, 1: 0, 2: 0, 3: 0}
+		for s in self.schueler:
+			if self.istda[s,self.exkursionenzeit]:
+				tl = sorted(self.exkursionen, key=lambda t: -self.pref[s,t])
+				b = 0
+				while b < len(tl) and self.pref[s,tl[b]] == self.pref[s,tl[0]]:
+					b += 1
+				t = random.choice(tl[0:b])
+				assert self.pref[s,tl[0]] == self.pref[s,t]
+				anzpref[self.pref[s,t]] += 1
+				self.exkursionenfuelle[t] += 1
+				self.exkursionenzuordnung[s] = t
+		for t in self.exkursionen:
+			if t.titel == u"Astronomisch-Physikalisches Kabinett":
+				assert self.exkursionenfuelle[t] <= 45
+			elif t.titel == u"Bergpark Wilhelmshöhe":
+				assert self.exkursionenfuelle[t] <= 25
+			elif t.titel == u"Betriebsbesichtigung zu Volkswagen Kassel":
+				assert self.exkursionenfuelle[t] <= 25
+				assert self.exkursionenfuelle[t] >= 15
+			elif t.titel == u"Technikmuseum":
+				assert self.exkursionenfuelle[t] <= 28
+			else:
+				assert False
+		topr = PrettyTable(["Exkursion", "# Schüler"])
+		for t in self.exkursionen:
+			topr.add_row([t.titel, self.exkursionenfuelle[t]])
+		print topr
+		topr = PrettyTable(["Präferenz", "# Schüler mit dieser Exkursions-Präferenz"])
+		for p in [-1,0,1,2,3]:
+			topr.add_row([p, anzpref[p]])
+		print topr
