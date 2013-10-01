@@ -63,6 +63,9 @@ class Global(object):
 			for b in p.betreuer:
 				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen und auch das nur, wenn er da ist
 				prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) <= p.istda[b,z]
+				# Gastbetreuer wollen immer was zu tun haben
+				if b.gastbetreuer:
+					prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) == p.istda[b,z]
 			for t in p.themen:
 				# Thema findet nur statt, wenn ein Betreuer das macht
 				prob += thema_findet_dann_statt[t,z] == pulp.lpSum([betreuer_belegungen[b,t,z] for b in p.betreuer])
@@ -97,6 +100,10 @@ class Global(object):
 		thema_findet_so_oft_statt = PulpMatrix("thema_findet_so_oft_statt", (p.themen,), 0, None, pulp.LpInteger)
 		for t in p.themen:
 			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten])
+		
+		# Zu jedem Zeitpunkt sollten >= 3 Betreuer frei haben
+		for z in p.zeiteinheiten:
+			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.betreuer) >= 3
 		
 		# Mikhails hardgecodet:
 		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[2]] == 1
@@ -201,9 +208,9 @@ class Global(object):
 		
 		# Gerechtigkeitsdummys
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
-		# Jeder Betreuer sollte mindestens 5 Mal etwas tun
+		# Jeder Betreuer sollte mindestens 7 Mal etwas tun
 		for b in p.betreuer:
-			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(5,sum(p.istda[b,z] for z in p.zeiteinheiten))
+			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(7,sum(p.istda[b,z] for z in p.zeiteinheiten))
 		# Jeder Betreuer sollte mindestens 2 verschiedene Themen haben
 		# TODO Wieder einfügen, sobald möglich
 		#for b in p.betreuer:

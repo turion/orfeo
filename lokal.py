@@ -71,7 +71,7 @@ class Lokal(object):
 		#maxauslastung = pulp.LpVariable("maxauslastung", 0, None, pulp.LpContinuous)
 		for z in p.zeiteinheiten:
 			for t in p.themen:
-				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,12) * gl.raum_belegungen[r,t,z] for r in p.raeume])
+				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume])
 				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= maxauslastung * sum([gl.raum_belegungen[r,t,z] for r in p.raeume])
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) >= sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume])
@@ -363,15 +363,24 @@ class Lokal(object):
 			for z in p.zeiteinheiten:
 				if self.stundenplan[a,z]:
 					t = self.stundenplan[a,z]
+					tn = t.titel
 					rn = gl.raum_von[t,z].name
 					beschr = "ca. %d Teilnehmer" % len(self.teilnehmer_von[t,z])
 					if a in p.betreuer:
 						beschr += ": " + ", ".join(s.cname() for s in self.teilnehmer_von[t,z])
 					else:
 						beschr += ", Betreuer: "+gl.betreuer_von[t,z].cname()
-					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(t.titel), tex(rn), beschr)
 				else:
-					ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{frei}{}}" % convert(z.name) # TODO Pausenmusik wieder reinnehmen?
+					tn = "frei"
+					rn = ""
+					beschr = ""
+				if a in p.betreuer:
+					if beschr != "":
+						beschr += "\\newline\n"
+					beschr += "Folgende Betreuer haben frei: " + ", ".join(b.cname() for b in p.betreuer if gl.betreuer_stundenplan[b,z] is None and p.istda[b,z])
+				if beschr != "":
+					beschr = "\n\n\\beschreibung{%s}" % beschr
+				ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}%s}" % (convert(z.name), tn, tex(rn), beschr)
 			for z in p.nichtphysikzeiteinheiten:
 				if z.beschreibung != "":
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort), tex(z.beschreibung))
