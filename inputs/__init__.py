@@ -141,11 +141,12 @@ class AbstractProblem(object):
 			topr.add_row([a.cname(), "MEINUNGSLOS" if hm == 0 else (("" if hm != len(self.themen) else "")+str(hm)), ", ".join([str(t.id) for t in self.themen if not hatmeinung[a,t]]) if hm > len(self.themen)-5 else ("" if hm == len(self.themen) else "...")])
 		print topr
 		
-		topr = PrettyTable(["Thema","Betreuer"])
+		topr = PrettyTable(["Thema","Betreuer","Spezialraum"])
 		for t in self.themen:
 			bs = [b for b in self.betreuer if self.pref[b,t] == 3]
 			bsn = [b.cname() for b in bs]
-			topr.add_row([t.titel,("WARNING: " if len(bsn) > 1 else "")+", ".join(bsn)])
+			rsn = ["{} ({})".format(r.name, r.id) for r in self.raeume if r.themen_id == t.id]
+			topr.add_row([t.titel,("WARNING: " if len(bsn) > 1 else "")+", ".join(bsn), ", ".join(rsn)])
 			# TODO Wieder einfügen
 			#if len(bs) != 0:
 				#raise Exception(u"Thema {} ({}) hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, t.id, ", ".join(bs)).encode("utf8"))
