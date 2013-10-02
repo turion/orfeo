@@ -75,7 +75,10 @@ class Lokal(object):
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume])
 				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= maxauslastung * sum([gl.raum_belegungen[r,t,z] for r in p.raeume])
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
-				mingroesse = 2 if t.titel != "Grundlagen der Elektronenmikroskopie" else 4
+				mingroesse = 5
+				for r in p.raeume:
+					if r.themen_id == t.id:
+						mingroesse = 2 if t.titel != "Grundlagen der Elektronenmikroskopie" else 4
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) >= sum([mingroesse * gl.raum_belegungen[r,t,z] for r in p.raeume])
 		print 3
 		#prob += maxauslastung <= 15 # SEHR SELTSAM, dass das die Sache verbessert!!!
