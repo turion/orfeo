@@ -17,6 +17,7 @@ def tex(a):
 	a = a.replace("""<a href="http://www.orpheus-verein.de/sites/default/files/OSZ.pdf">http://www.orpheus-verein.de/sites/default/files/OSZ.pdf</a>""", "http://www.orpheus-verein.de/sites/default/files/OSZ.pdf")
 	a = a.replace("->", r" $\rightarrow$")
 	a = a.replace(u"”", "\"")
+	a = a.replace(u"Einladung zum Vereinstreffen 2014", u"Einladung zum Vereinstreffen 2014: Das nächste Vereinstreffen findet vom 2. bis 5. Januar 2014 in München statt, Anmeldung voraussichtlich ab Mitte Oktober möglich. Neben einer offiziellen Mitgliederversammlung und neuen Bekanntschaften erwartet Dich dort u.a. das größte technisch-naturwissenschaftliche Museum der Welt! Mehr Informationen gibt es bald auf der Vereinshomepage www.orpheus-verein.de")
 	b = ""
 	anf = 0
 	for i in xrange(len(a)):
@@ -352,7 +353,7 @@ class Lokal(object):
 		with open("stundenplan-einzeln.tex") as stundenplan_einzeln_datei:
 			stemplate = stundenplan_einzeln_datei.read().decode('utf8')
 		for a in p.betreuer+p.schueler:
-			ersetzen = {"name": a.cname()}
+			ersetzen = {"name": a.cname(), "betreuerpagebreak": r"\newpage" if a in p.betreuer else ""}
 			def convert(n):
 				n = n.replace("Do ", "")
 				n = n.replace("Fr ", "")
@@ -381,7 +382,7 @@ class Lokal(object):
 					beschr += "Folgende Betreuer haben frei: " + ", ".join(b.cname() for b in p.betreuer if gl.betreuer_stundenplan[b,z] is None and p.istda[b,z])
 				if beschr != "":
 					beschr = "\n\n\\beschreibung{%s}" % beschr
-				ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}%s}" % (convert(z.name), tn, tex(rn), beschr)
+				ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}%s}" % (convert(z.name), tex(tn), tex(rn), beschr)
 			for z in p.nichtphysikzeiteinheiten:
 				if z == p.exkursionenzeit and a in p.schueler:
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex("Exkursion: "+p.exkursionenzuordnung[a].titel if p.exkursionenzuordnung[a] else "frei"), "", "ca. %d Teilnehmer" % p.exkursionenfuelle[p.exkursionenzuordnung[a]])
