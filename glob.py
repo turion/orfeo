@@ -26,6 +26,9 @@ class Global(object):
 		for t in p.themen:
 			for z in p.zeiteinheiten:
 				prob += thema_findet_dann_statt[t,z] == pulp.lpSum([raum_belegungen[r,t,z] for r in p.raeume])
+				if z.name == "Fr 11:00 -- Fr 12:45":
+					if t.titel in ["Beugung am Vielfachspalt", "Elektrische Blackboxen"]:
+						prob += thema_findet_dann_statt[t,z] == 1
 		
 		# Dafür sorgen, dass es genug Kurse für alle gibt
 		for z in p.zeiteinheiten:
@@ -103,7 +106,7 @@ class Global(object):
 		
 		# Zu jedem Zeitpunkt sollten >= 3 Betreuer frei haben
 		for z in p.zeiteinheiten:
-			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.betreuer) >= 3
+			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.betreuer) >= 2
 		
 		# Mikhails hardgecodet:
 		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[2]] == 1
