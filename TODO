@@ -1,0 +1,11 @@
+Timestamps
+	Damit Daten von verschiedenen Durchläufen nicht verwechselt werden
+	Insbesondere Daten von verschiedenen Jahren
+	Die ausschlaggebende Zeit sollte die Zeit des Runterladens sein
+		Es sollte nur mit download_xmls.sh runtergeladen werden
+		In allen Berechnungen sollten die Timestamps der Daten, auf denen sie basieren, gespeichert und verglichen werden
+	Es sollte automatisch der neueste Datensatz verwendet werden
+	Außerdem sollte irgendwo noch das Jahr des Seminars gespeichert werden (XML mit allgemeinen Daten zum Seminar wie z.B. Titel, Ort etc.?)
+inputs.daten kann gelöscht oder deaktiviert werden, da Testdaten im XML-Format vorhanden sind
+Riesenfunktionen in kleinere aufbrechen
+ValueErrors wahlweise als Warnungen
