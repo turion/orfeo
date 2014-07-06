@@ -76,9 +76,14 @@ class Problem(AbstractProblem):
 		raeume = []
 		rids = {}
 		for rx in rxml.getElementsByTagName("node"):
+			max_personen = getText(rx.getElementsByTagName("Raumgr-e")[0])
+			if max_personen == "":
+				max_personen = 30
+			else:
+				max_personen = int(max_personen)
 			r = Raeume(id=int(getText(rx.getElementsByTagName("id")[0])),
 			           name=getText(rx.getElementsByTagName("Name")[0]),
-			           max_personen=int(getText(rx.getElementsByTagName("Raumgr-e")[0])),
+			           max_personen=max_personen,
 			           themen_id=None,
 			           beamer=(getText(rx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			raeume.append(r)
@@ -113,6 +118,8 @@ class Problem(AbstractProblem):
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			t.titel = t.titel.replace("lüs", "lüs")
 			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
+			if t.titel == "Luftschiene":
+				continue
 			if not bereich in [315, 13]:
 				themen.append(t)
 				tids[t.id] = t
@@ -201,7 +208,7 @@ class Problem(AbstractProblem):
 		
 	def macheexkursionen(self):
 		import random
-		random.seed(42)
+		random.seed(43)
 		# Exkursionen zuordnen
 		self.exkursionenfuelle = Bessere((self.exkursionen,), 0)
 		self.exkursionenzuordnung = Bessere((self.schueler,), None)
