@@ -99,9 +99,9 @@ class Themen(Base):
 		self.typ = typ
 		self.regelmaessig = regelmaessig
 	def __unicode__(self):
-		return u"{titel} ({beschreibung}, {kommentar})".format(titel=self.titel, beschreibung=self.beschreibung[:20].strip(), kommentar=self.kommentar[:20].strip())
+		return "{titel} ({beschreibung}, {kommentar})".format(titel=self.titel, beschreibung=self.beschreibung[:20].strip(), kommentar=self.kommentar[:20].strip())
 	def __str__(self):
-		return unicode(self).encode("utf-8")
+		return str(self).encode("utf-8")
 	@property # Auf diese Weise kann man ganz einfach einthema.aktuelle_version aufrufen
 	def aktuelle_version(self): # TODO: Das funktioniert nicht in Queries. Vllt besser mit foreign keys
 		try:
@@ -122,7 +122,7 @@ mehrstuendige_themen = themen.filter(Themen.laenge!=None)
 class Personen(Base):
 	__tablename__ = "personen"
 	def __unicode__(self):
-		return u"""Name:                   {self.vorname} {self.nachname}
+		return """Name:                   {self.vorname} {self.nachname}
 Adresse:                {self.strasse}
                         {self.plz} {self.ort}
                         {bundesland}
@@ -135,7 +135,7 @@ Datenversand:           {self.datenversand}
 Forenaccount:           {self.forenaccount}
 Sonstiges:              {self.kommentar}""".format(self=self, geschlecht={'m': "männlich", 'w': "weiblich", '': "nicht angegeben"}[self.geschlecht], bundesland=bundesland(self.bundesland)) # Da war auch mal der Abijahrgang dabei
 	def __str__(self):
-		return unicode(self).encode("utf-8")
+		return str(self).encode("utf-8")
 	@property
 	def alter(self): # TESTME
 		import datetime
@@ -153,7 +153,7 @@ Sonstiges:              {self.kommentar}""".format(self=self, geschlecht={'m': "
 		else: # Hatte dieses Jahr schon Geburtstag
 			return heute.year - geburtsdatum.year
 	def name(self):
-		return u"{} {}".format(self.vorname, self.nachname)
+		return "{} {}".format(self.vorname, self.nachname)
 	def cvorname(self):
 		if self.nachname != '':
 			return self.vorname.strip()
@@ -165,7 +165,7 @@ Sonstiges:              {self.kommentar}""".format(self=self, geschlecht={'m': "
 		else:
 			return self.vorname.replace(","," ").split(" ")[-1].strip()
 	def cname(self):
-		return u"{} {}".format(self.cvorname(), self.cnachname())
+		return "{} {}".format(self.cvorname(), self.cnachname())
 personen = session.query(Personen)
 
 class LeerePerson(Personen):
@@ -329,15 +329,15 @@ class Problem(AbstractProblem):
 	def __init__(self):
 		jahr = 2012
 		relevante_anmeldungen = jemals_anmeldungen.filter(NimmtTeil.jahr==jahr).filter(NimmtTeil.spam=='n').filter(NimmtTeil.warteliste==None)
-		betreuer = map(lambda x: x[1], relevante_anmeldungen.filter(Personen.betreuer=="1").all())
+		betreuer = [x[1] for x in relevante_anmeldungen.filter(Personen.betreuer=="1").all()]
 		betreuer.sort(key = lambda a : (a.cnachname(), a.cvorname()))
-		schueler = map(lambda x: x[1], relevante_anmeldungen.filter(Personen.betreuer=='').all())
+		schueler = [x[1] for x in relevante_anmeldungen.filter(Personen.betreuer=='').all()]
 		schueler.sort(key = lambda a : (a.cnachname(), a.cvorname()))
 		zeiteinheiten_ = zeiteinheiten.filter(Zeiteinheiten.jahr==jahr).all()
 		zeiteinheiten_.sort(key = lambda z: z.stelle)
 		raeume_ = raeume.filter(Raeume.jahr==jahr).all()
 		raeume_.sort(key = lambda r : r.name.lower())
-		raeume_ausnahmen = map(lambda x: x[0], session.query(RaeumeAusnahmen, Raeume).filter(RaeumeAusnahmen.raeume_id==Raeume.id).filter(Raeume.jahr==jahr).all())
+		raeume_ausnahmen = [x[0] for x in session.query(RaeumeAusnahmen, Raeume).filter(RaeumeAusnahmen.raeume_id==Raeume.id).filter(Raeume.jahr==jahr).all()]
 		themen_ = [thema for thema in themen if wunschthemen.filter_by(jahr=jahr, themen_id=thema.id).count()]
 		themen_.sort(key = lambda t : t.titel.lower())
 
@@ -363,4 +363,4 @@ class Problem(AbstractProblem):
 		themen_.append(self.mikhail_4)
 		self.mikhail_4.titel += " (sequel)"
 
-		AbstractProblem.__init__(self, themen_, betreuer, schueler, zeiteinheiten_, [], raeume_, kompetenzen.all(), voraussetzungen_, session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen_, [], betreuer, schueler, zeiteinheiten_, [], raeume_, kompetenzen.all(), voraussetzungen_, session.query(NimmtTeilZeiteinheitenAusnahmen), {a.id: wunschthemen.filter_by(personen_id=a.id, jahr=jahr).all() for a in betreuer+schueler}, raeume_ausnahmen)

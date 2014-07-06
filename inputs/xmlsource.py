@@ -111,7 +111,7 @@ class Problem(AbstractProblem):
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
 			           beschreibung=getText(tx.getElementsByTagName("Beschreibung")[0]),
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
-			t.titel = t.titel.replace(u"lüs", u"lüs")
+			t.titel = t.titel.replace("lüs", "lüs")
 			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
 			if not bereich in [315, 13]:
 				themen.append(t)
@@ -196,10 +196,7 @@ class Problem(AbstractProblem):
 				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
 										zeiteinheiten_id=zid))
 		raeume_ausnahmen = [] # TODO (nicht 2013)
-		self.allezeiteinheiten = zeiteinheiten+nichtphysikzeiteinheiten
-		self.exkursionen = exkursionen
-		self.allethemen = themen+exkursionen
-		AbstractProblem.__init__(self, themen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
 		self.macheexkursionen()
 		
 	def macheexkursionen(self):
@@ -221,22 +218,22 @@ class Problem(AbstractProblem):
 				self.exkursionenfuelle[t] += 1
 				self.exkursionenzuordnung[s] = t
 		for t in self.exkursionen:
-			if t.titel == u"Astronomisch-Physikalisches Kabinett":
+			if t.titel == "Astronomisch-Physikalisches Kabinett":
 				assert self.exkursionenfuelle[t] <= 45
-			elif t.titel == u"Bergpark Wilhelmshöhe":
+			elif t.titel == "Bergpark Wilhelmshöhe":
 				assert self.exkursionenfuelle[t] <= 25
-			elif t.titel == u"Betriebsbesichtigung zu Volkswagen Kassel":
+			elif t.titel == "Betriebsbesichtigung zu Volkswagen Kassel":
 				assert self.exkursionenfuelle[t] <= 25
 				assert self.exkursionenfuelle[t] >= 15
-			elif t.titel == u"Technikmuseum":
+			elif t.titel == "Technikmuseum":
 				assert self.exkursionenfuelle[t] <= 28
 			else:
 				assert False
 		topr = PrettyTable(["Exkursion", "# Schüler"])
 		for t in self.exkursionen:
 			topr.add_row([t.titel, self.exkursionenfuelle[t]])
-		print topr
+		print(topr)
 		topr = PrettyTable(["Präferenz", "# Schüler mit dieser Exkursions-Präferenz"])
 		for p in [-1,0,1,2,3]:
 			topr.add_row([p, anzpref[p]])
-		print topr
+		print(topr)

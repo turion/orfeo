@@ -264,31 +264,31 @@ class Global(object):
 				line = f.readline()
 				if line == "":
 					break
-				line = line.decode("utf8").replace("\n","")
+				line = line.replace("\n","")
 				if line == "" or line[0] == "#":
 					continue
 				if line[0:2] != "= ":
-					raise Exception(u"Betreuer erwartet")
+					raise ValueError("Betreuer erwartet")
 				line = line[2:]
 				b = None
 				for bs in p.betreuer:
 					if bs.cname() == line:
 						b = bs
 				if b is None:
-					raise Exception(u"Betreuer \"{}\" existiert nicht".format(line).encode("utf8"))
+					raise ValueError("Betreuer \"{}\" existiert nicht".format(line))
 				if b.id in gefundene_betreuer:
-					raise Exception(u"Betreuer \"{}\" schon angegeben".format(line).encode("utf8"))
+					raise ValueError("Betreuer \"{}\" schon angegeben".format(line))
 				gefundene_betreuer.add(b.id)
 				for z in p.zeiteinheiten:
 					line = f.readline()
 					if line == "":
-						raise Exception(u"Was macht Betreuer \"{}\" zur Zeit \"{}\"?".format(b.cname(),z.name).encode("utf8"))
-					line = line.decode("utf8").replace("\n","")
+						raise ValueError("Was macht Betreuer \"{}\" zur Zeit \"{}\"?".format(b.cname(),z.name))
+					line = line.replace("\n","")
 					line = line.split(" <-> ")
 					if len(line) != 3:
-						raise Exception(u"Falsches Format für Betreuer \"{}\" zur Zeit \"{}\"".format(b.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsches Format für Betreuer \"{}\" zur Zeit \"{}\"".format(b.cname(),z.name))
 					if line[0] != z.name:
-						raise Exception(u"Falsche Zeit \"{}\" für Betreuer \"{}\" (wollte \"{}\")".format(line[0],b.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsche Zeit \"{}\" für Betreuer \"{}\" (wollte \"{}\")".format(line[0],b.cname(),z.name))
 					if line[1] == "" and line[2] == "":
 						continue
 					t = None
@@ -296,33 +296,33 @@ class Global(object):
 						if ts.titel == line[1]:
 							t = ts
 					if t is None:
-						raise Exception(u"Thema \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[1],b.cname(),z.name).encode("utf8"))
+						raise ValueError("Thema \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[1],b.cname(),z.name))
 					r = None
 					for rs in p.raeume:
 						if "{} ({})".format(rs.name,rs.id) == line[2]:
 							r = rs
 					if r is None:
-						raise Exception(u"Raum \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[2],b.cname(),z.name).encode("utf8"))
+						raise ValueError("Raum \"{}\" existiert nicht (für Betreuer \"{}\" zu Zeit \"{}\")".format(line[2],b.cname(),z.name))
 					self.raum_belegungen[r,t,z] = 1
 					self.betreuer_themen[b,t] = 1
 					self.betreuer_belegungen[b,t,z] = 1
 		if len(gefundene_betreuer) < len(p.betreuer):
-			raise Exception(u"Nicht alle Betreuer angegeben".encode('utf8'))
+			raise ValueError("Nicht alle Betreuer angegeben".encode('utf8'))
 		# Raum nur benutzen, wenn er verfügbar ist (insbesondere zu jedem Zeitpunkt nur höchstens einmal)
 		for r in p.raeume:
 			for z in p.zeiteinheiten:
 				if sum([self.raum_belegungen[r,t,z] for t in p.themen]) > p.raumverfuegbar[r,z]:
-					raise Exception(u"Raum {} wird zu Zeit {} mehrfach belegt".format(r.name,z.name).encode('utf8'))
+					raise ValueError("Raum {} wird zu Zeit {} mehrfach belegt".format(r.name,z.name).encode('utf8'))
 		thema_findet_dann_statt = Bessere((p.themen, p.zeiteinheiten), 0)
 		for t in p.themen:
 			for z in p.zeiteinheiten:
 				thema_findet_dann_statt[t,z] = sum([self.raum_belegungen[r,t,z] for r in p.raeume])
 				if thema_findet_dann_statt[t,z] > 1:
-					raise Exception(u"Thema {} findet zur Zeit {} mehrmals statt".format(t.titel,z.name).encode('utf8'))
+					raise ValueError("Thema {} findet zur Zeit {} mehrmals statt".format(t.titel,z.name).encode('utf8'))
 		# Dafür sorgen, dass es genug Kurse für alle gibt
 		for z in p.zeiteinheiten:
 			if sum([self.raum_belegungen[r,t,z]*r.max_personen for t in p.themen for r in p.raeume]) < sum([p.istda[s,z] for s in p.schueler]):
-				raise Exception(u"Zu wenig Angebote zur Zeit {}".format(z.name).encode('utf8'))
+				raise ValueError("Zu wenig Angebote zur Zeit {}".format(z.name).encode('utf8'))
 		# Spezialräume
 		nurinraeumen = Bessere((p.themen,), [])
 		for r in p.raeume:
@@ -332,7 +332,7 @@ class Global(object):
 					if t.id != r.themen_id: # Also werden alle anderen Themen dort nicht stattfinden
 						for z in p.zeiteinheiten:
 							if self.raum_belegungen[r,t,z] > 0:
-								raise Exception(u"Im Spezialraum {} findet falsches Thema {} zur Zeit {} statt".format(r.name,t.titel,z.name).encode('utf8'))
+								raise ValueError("Im Spezialraum {} findet falsches Thema {} zur Zeit {} statt".format(r.name,t.titel,z.name).encode('utf8'))
 		# Richtige Sachen in Spezialräumen stattfinden lassen
 		for t in p.themen:
 			if len(nurinraeumen[t]):
@@ -340,32 +340,32 @@ class Global(object):
 					if not r in nurinraeumen[t]:
 						for z in p.zeiteinheiten:
 							if self.raum_belegungen[r,t,z] > 0:
-								raise Exception(u"Thema {} findet zur Zeit {} nicht in seinem Spezialraum statt".format(t.titel,z.name).encode('utf8'))
+								raise ValueError("Thema {} findet zur Zeit {} nicht in seinem Spezialraum statt".format(t.titel,z.name).encode('utf8'))
 		for z in p.zeiteinheiten:
 			for b in p.betreuer:
 				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen und auch das nur, wenn er da ist
 				if sum([self.betreuer_belegungen[b,t,z] for t in p.themen]) > p.istda[b,z]:
-					raise Exception(u"Betreuer {} soll zur Zeit {} etwas tun, obwohl er nicht da ist".format(b.cname(),z.name).encode('utf8'))
+					raise ValueError("Betreuer {} soll zur Zeit {} etwas tun, obwohl er nicht da ist".format(b.cname(),z.name).encode('utf8'))
 		# Jedes Thema wird von genau einem Betreuer gehalten (insbesondere wird jedes Thema mindestens einmal gehalten)
 		# TODO Vielleicht <= statt == nehmen?
 		# TODO Was ist, wenn mehrere Betreuer sich ein Thema teilen wollen?
 		for t in p.themen:
 			if sum([self.betreuer_themen[b,t] for b in p.betreuer]) != 1:
-				raise Exception(u"Thema {} wird nicht von genau einem Betreuer gehalten".format(t.titel).encode('utf8'))
+				raise ValueError("Thema {} wird nicht von genau einem Betreuer gehalten".format(t.titel).encode('utf8'))
 		# Betreuer-Präferenzen
 		for b in p.betreuer:
 			for t in p.themen:
 				if p.pref[b,t] == 3: # Unbedingt und sonst niemand
 					# Das bedeutet, dass jedes Thema, das jemand unbedingt machen will, irgendwann angeboten wird (TODO so OK?)
 					if self.betreuer_themen[b,t] != 1:
-						raise Exception(u"Betreuer {} bekommt Thema {} nicht, obwohl er es unbedingt will".format(b.cname(),t.titel).encode('utf8'))
+						raise ValueError("Betreuer {} bekommt Thema {} nicht, obwohl er es unbedingt will".format(b.cname(),t.titel).encode('utf8'))
 					for ab in p.betreuer:
 						if ab.id != b.id:
 							if self.betreuer_themen[ab,t] != 0:
-								raise Exception(u"Betreuer {} bekommt Thema {}, obwohl {} das unbedingt will".format(ab.cname(),t.titel,b.cname()).encode('utf8'))
+								raise ValueError("Betreuer {} bekommt Thema {}, obwohl {} das unbedingt will".format(ab.cname(),t.titel,b.cname()).encode('utf8'))
 				elif p.pref[b,t] == -1: # Auf keinen Fall
 					if self.betreuer_themen[b,t] != 0:
-						raise Exception(u"Betreuer {} bekommt Thema {}, obwohl er das auf keinen Fall will".format(b.cname(),t.titel).encode('utf8'))
+						raise ValueError("Betreuer {} bekommt Thema {}, obwohl er das auf keinen Fall will".format(b.cname(),t.titel).encode('utf8'))
 		self.calcrest()
 	
 	@classmethod
@@ -379,13 +379,13 @@ class Global(object):
 		with open(filename,"w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for b in p.betreuer:
-				f.write(u"= {}\n".format(b.cname()).encode("utf8"))
+				f.write("= {}\n".format(b.cname()))
 				for z in p.zeiteinheiten:
 					t = self.betreuer_stundenplan[b,z]
 					tn = t.titel if t is not None else ""
 					r = self.betreuer_raumplan[b,z]
 					rn = "{} ({})".format(r.name,r.id) if r is not None else ""
-					f.write(u"{} <-> {} <-> {}\n".format(z.name, tn, rn).encode("utf8"))
+					f.write("{} <-> {} <-> {}\n".format(z.name, tn, rn))
 	
 	def zeige_zeit(self):
 		p = self.problem
@@ -394,7 +394,7 @@ class Global(object):
 			for t in p.themen:
 				if self.raum_von[t,z]:
 					topr.add_row([z.name,t.titel,self.betreuer_von[t,z].cname(),self.raum_von[t,z].name])
-		print topr
+		print(topr)
 	
 	def zeige_betreuer(self):
 		p = self.problem
@@ -406,18 +406,18 @@ class Global(object):
 					topr.add_row([b.cname(), z.stelle, t.titel, self.raum_von[t,z].name, p.pref[b,t]])
 				else:
 					topr.add_row([b.cname(), z.stelle, "" if not p.istda[b,z] else "---", "", ""])
-		print topr
+		print(topr)
 	
 	def zeige_thema(self):
 		p = self.problem
 		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Kompetente"])
 		for t in p.themen:
 			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if self.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if self.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t], len([1 for s in p.schueler if p.pref[s,t] == -1])])
-		print topr
+		print(topr)
 	
 	def zeige_raum(self):
 		p = self.problem
 		topr = PrettyTable(["Zeit","Freie Nicht-Spezial-Räume"])
 		for z in p.zeiteinheiten:
 			topr.add_row([z.name, ", ".join("{} ({})".format(r.name, r.id) for r in p.raeume if sum(self.raum_belegungen[r,t,z] for t in p.themen) == 0 and r.themen_id is None)])
-		print topr
+		print(topr)

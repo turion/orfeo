@@ -56,7 +56,7 @@ class PulpMatrix(Bessere):
 	def __init__(self, name, indizes, *args, **kwargs):
 		Bessere.__init__(self, indizes, None)
 		for a in itertools.product(*indizes):
-			self[a] = pulp.LpVariable(name+"_".join(map(lambda x: str(macheint(x)), a)), *args, **kwargs)
+			self[a] = pulp.LpVariable(name+"_".join([str(macheint(x)) for x in a]), *args, **kwargs)
 		self.name = name
 	def werte(self):
 		"""Gibt eine Matrix mit den optimalen Variablen-Werten zurück"""
@@ -67,12 +67,15 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
+	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
 		self.themen = themen
+		self.exkursionen = exkursionen
+		allethemen = themen + exkursionen
 		self.betreuer = betreuer
 		self.schueler = schueler
 		self.zeiteinheiten = zeiteinheiten
 		self.nichtphysikzeiteinheiten = nichtphysikzeiteinheiten
+		allezeiteinheiten = zeiteinheiten + nichtphysikzeiteinheiten
 		self.raeume = raeume
 		self.kompetenzen = kompetenzen
 		self.voraussetzungen = voraussetzungen
@@ -80,14 +83,14 @@ class AbstractProblem(object):
 		self.wunschthemen = wunschthemen
 		self.raeume_ausnahmen = raeume_ausnahmen
 		# Ob a zur Zeit z anwesend ist
-		self.istda = Bessere((self.schueler+self.betreuer,self.allezeiteinheiten), 1)
+		self.istda = Bessere((self.schueler+self.betreuer,allezeiteinheiten), 1)
 		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
 			if ausnahme.nimmt_teil.personen in self.schueler+self.betreuer:
 				self.istda[ausnahme.nimmt_teil.personen_id, ausnahme.zeiteinheiten_id] = 0
 
 		# Wie gerne a Thema t mag
-		self.pref = Bessere((self.betreuer+self.schueler,self.allethemen), 1)
-		hatmeinung = Bessere((self.betreuer+self.schueler,self.allethemen), 0)
+		self.pref = Bessere((self.betreuer+self.schueler,allethemen), 1)
+		hatmeinung = Bessere((self.betreuer+self.schueler,allethemen), 0)
 		for a in (self.betreuer+self.schueler):
 			W = wunschthemen[a.id]
 			for w in W:
@@ -97,6 +100,8 @@ class AbstractProblem(object):
 					self.pref[a,self.mikhail_4] = w.gerne or 0
 					hatmeinung[a,self.mikhail_4] = 1
 		for a in self.betreuer:  # Gastbetreuer bekommen nichts, was sie nicht unbedingt wollen
+			if not hasattr(a, "gastbetreuer"):
+				a.gastbetreuer = False
 			if a.gastbetreuer:
 				for t in self.themen:
 					if self.pref[a,t] != 3:
@@ -139,7 +144,7 @@ class AbstractProblem(object):
 		for a in self.betreuer+self.schueler:
 			hm = sum(hatmeinung[a,t] for t in self.themen)
 			topr.add_row([a.cname(), "MEINUNGSLOS" if hm == 0 else (("" if hm != len(self.themen) else "")+str(hm)), ", ".join([str(t.id) for t in self.themen if not hatmeinung[a,t]]) if hm > len(self.themen)-5 else ("" if hm == len(self.themen) else "...")] + [len([1 for t in self.themen if self.pref[a,t] == p]) for p in [-1,0,1,2,3]])
-		print topr
+		print(topr)
 		
 		topr = PrettyTable(["Thema","Betreuer","Spezialraum"])
 		for t in self.themen:
@@ -153,14 +158,14 @@ class AbstractProblem(object):
 			if len(bs) > 1:
 				for b in bs[1:]:
 					self.pref[b,t] = 0
-		print topr
+		print(topr)
 		
 		topr = PrettyTable(["Person", "Zeiten, zu denen sie abwesend ist"])
 		for a in self.betreuer+self.schueler:
 			nd = [str(z.stelle) for z in self.zeiteinheiten if not self.istda[a,z]]
 			if len(nd) > 0:
 				topr.add_row([a.cname(), ", ".join(nd)])
-		print topr
+		print(topr)
 	
 	def printinfos(self):
-		print len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten"
+		print(len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten")

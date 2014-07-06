@@ -16,11 +16,11 @@ def tex(a):
 	a = a.replace("</li>", "")
 	a = a.replace("""<a href="http://www.orpheus-verein.de/sites/default/files/OSZ.pdf">http://www.orpheus-verein.de/sites/default/files/OSZ.pdf</a>""", "http://www.orpheus-verein.de/sites/default/files/OSZ.pdf")
 	a = a.replace("->", r" $\rightarrow$")
-	a = a.replace(u"”", "\"")
-	a = a.replace(u"Einladung zum Vereinstreffen 2014", u"Einladung zum Vereinstreffen 2014: Das nächste Vereinstreffen findet vom 2. bis 5. Januar 2014 in München statt, Anmeldung voraussichtlich ab Mitte Oktober möglich. Neben einer offiziellen Mitgliederversammlung und neuen Bekanntschaften erwartet Dich dort u.a. das größte technisch-naturwissenschaftliche Museum der Welt! Mehr Informationen gibt es bald auf der Vereinshomepage www.orpheus-verein.de")
+	a = a.replace("”", "\"")
+	a = a.replace("Einladung zum Vereinstreffen 2014", "Einladung zum Vereinstreffen 2014: Das nächste Vereinstreffen findet vom 2. bis 5. Januar 2014 in München statt, Anmeldung voraussichtlich ab Mitte Oktober möglich. Neben einer offiziellen Mitgliederversammlung und neuen Bekanntschaften erwartet Dich dort u.a. das größte technisch-naturwissenschaftliche Museum der Welt! Mehr Informationen gibt es bald auf der Vereinshomepage www.orpheus-verein.de")
 	b = ""
 	anf = 0
-	for i in xrange(len(a)):
+	for i in range(len(a)):
 		if a[i] == "\"":
 			if anf%2 == 0:
 				b += "\"`"
@@ -59,14 +59,14 @@ class Lokal(object):
 					prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
 				zeitdavor = z
 		langeweile = pulp.lpSum(langeweile)
-		print 1
+		print(1)
 		
 		# Ob der Schüler das Thema besucht (automatisch höchstens einmal)
 		schuelerthemen = PulpMatrix("schuelerthemen", (p.schueler, p.themen), 0, 1, pulp.LpInteger)
 		for a in p.schueler:
 			for t in p.themen:
 				prob += schuelerthemen[a,t] == pulp.lpSum(belegungen[a,t,z] for z in p.zeiteinheiten)
-		print 2
+		print(2)
 		
 		# Thema darf nur belegt werden, wenn ein Raum dafür belegt ist, und dann auch nur in der maximalen Anzahl Personen
 		#maxauslastung = pulp.LpVariable("maxauslastung", 0, None, pulp.LpContinuous)
@@ -80,7 +80,7 @@ class Lokal(object):
 					if r.themen_id == t.id:
 						mingroesse = 2 if t.titel != "Grundlagen der Elektronenmikroskopie" else 4
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) >= sum([mingroesse * gl.raum_belegungen[r,t,z] for r in p.raeume])
-		print 3
+		print(3)
 		#prob += maxauslastung <= 15 # SEHR SELTSAM, dass das die Sache verbessert!!!
 		
 		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
@@ -91,7 +91,7 @@ class Lokal(object):
 				for z in p.zeiteinheiten:
 					prob += kennt_thema[s,t,z] == vorher + belegungen[s,t,z]
 					vorher = kennt_thema[s,t,z]
-		print 4
+		print(4)
 		
 		# Ein Schüler muss alle Voraussetzungen kennen
 		for t in p.themen:
@@ -100,7 +100,7 @@ class Lokal(object):
 					for z in p.zeiteinheiten:
 						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
 							prob += belegungen[s,t,z] <= kennt_thema[s,v,z]
-		print 5
+		print(5)
 		
 
 		# Gerne = -1 => Der Schüler will das Thema auf keinen Fall
@@ -117,7 +117,7 @@ class Lokal(object):
 			schuelerphysikspass[s] = pulp.lpSum([schuelerthemen[s,t]*p.prefbetter[s,t] for t in p.themen])
 			prob += schuelerphysikspass[s] >= 0.6
 		physikspass = pulp.lpSum([schuelerphysikspass[s] for s in p.schueler])
-		print 6
+		print(6)
 		#physikspass = pulp.LpVariable("physikspass", 0, None, pulp.LpContinuous)
 		#for a in p.schueler:
 			#prob += pulp.lpSum([schuelerthemen[a,t]*p.prefbetter[a,t] for t in p.themen]) >= physikspass
@@ -129,7 +129,7 @@ class Lokal(object):
 		#print 7
 		
 		prob += physikspass + langeweile #- 0.5*maxauslastung #+ pulp.lpSum([-groessenbewertung[t,z] for t in p.themen for z in p.zeiteinheiten])
-		print 8
+		print(8)
 		
 		# TODO Gerechtigkeit
 		
@@ -142,8 +142,8 @@ class Lokal(object):
 		
 		self.belegungen = belegungen.werte()
 		
-		print "Langeweile = {}".format(pulp.value(langeweile))
-		print "objective = {}".format(pulp.value(prob.objective))
+		print("Langeweile = {}".format(pulp.value(langeweile)))
+		print("objective = {}".format(pulp.value(prob.objective)))
 		
 		self.calcrest()
 	
@@ -180,31 +180,31 @@ class Lokal(object):
 				line = f.readline()
 				if line == "":
 					break
-				line = line.decode("utf8").replace("\n","")
+				line = line.replace("\n","")
 				if line == "" or line[0] == "#":
 					continue
 				if line[0:2] != "= ":
-					raise Exception(u"Schüler erwartet".encode("utf8"))
+					raise ValueError("Schüler erwartet".encode("utf8"))
 				line = line[2:]
 				s = None
 				for ss in p.schueler:
 					if ss.cname() == line:
 						s = ss
 				if s is None:
-					raise Exception(u"Schüler \"{}\" existiert nicht".format(line).encode("utf8"))
+					raise ValueError("Schüler \"{}\" existiert nicht".format(line).encode("utf8"))
 				if s.id in gefundene_schueler:
-					raise Exception(u"Schüler \"{}\" schon angegeben".format(line).encode("utf8"))
+					raise ValueError("Schüler \"{}\" schon angegeben".format(line).encode("utf8"))
 				gefundene_schueler.add(s.id)
 				for z in p.zeiteinheiten:
 					line = f.readline()
 					if line == "":
-						raise Exception(u"Was macht Schüler \"{}\" zur Zeit \"{}\"?".format(s.cname(),z.name).encode("utf8"))
-					line = line.decode("utf8").replace("\n","")
+						raise ValueError("Was macht Schüler \"{}\" zur Zeit \"{}\"?".format(s.cname(),z.name).encode("utf8"))
+					line = line.replace("\n","")
 					line = line.split(" <-> ")
 					if len(line) != 2:
-						raise Exception(u"Falsches Format für Schüler \"{}\" zur Zeit \"{}\"".format(s.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsches Format für Schüler \"{}\" zur Zeit \"{}\"".format(s.cname(),z.name).encode("utf8"))
 					if line[0] != z.name:
-						raise Exception(u"Falsche Zeit \"{}\" für Schüler \"{}\" (wollte \"{}\")".format(line[0],s.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsche Zeit \"{}\" für Schüler \"{}\" (wollte \"{}\")".format(line[0],s.cname(),z.name).encode("utf8"))
 					if line[1] == "":
 						continue
 					t = None
@@ -212,28 +212,28 @@ class Lokal(object):
 						if ts.titel == line[1]:
 							t = ts
 					if t is None:
-						raise Exception(u"Thema \"{}\" existiert nicht (für Schüler \"{}\" zu Zeit \"{}\")".format(line[1],s.cname(),z.name).encode("utf8"))
+						raise ValueError("Thema \"{}\" existiert nicht (für Schüler \"{}\" zu Zeit \"{}\")".format(line[1],s.cname(),z.name).encode("utf8"))
 					self.belegungen[s,t,z] = 1
 		if len(gefundene_schueler) < len(p.schueler):
-			raise Exception(u"Nicht alle Schüler angegeben".encode('utf8'))
+			raise ValueError("Nicht alle Schüler angegeben".encode('utf8'))
 		# Ein Schüler besucht pro Zeiteinheit höchstens eine Veranstaltung und das auch nur, wenn er da ist
 		for s in p.schueler:
 			for z in p.zeiteinheiten:
 				if sum([ self.belegungen[s,t,z] for t in p.themen ]) > p.istda[s,z]:
-					raise Exception(u"Schüler {} macht zur Zeit {} mehr als möglich (weil er nicht da ist?)".format(s.cname(),z.name).encode('utf8'))
+					raise ValueError("Schüler {} macht zur Zeit {} mehr als möglich (weil er nicht da ist?)".format(s.cname(),z.name).encode('utf8'))
 		# Ein Schüler besucht jedes Thema höchstens einmal
 		for s in p.schueler:
 			for t in p.themen:
 				if sum([self.belegungen[s,t,z] for z in p.zeiteinheiten]) > 1:
-					raise Exception(u"Schüler {} besucht Thema {} mehrmals".format(s.cname(),t.titel).encode('utf8'))
+					raise ValueError("Schüler {} besucht Thema {} mehrmals".format(s.cname(),t.titel).encode('utf8'))
 		# Thema darf nur belegt werden, wenn ein Raum dafür belegt ist, und dann auch nur in der maximalen Anzahl Personen
 		for z in p.zeiteinheiten:
 			for t in p.themen:
 				if sum([self.belegungen[s,t,z] for s in p.schueler]) > sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume]):
-					raise Exception(u"Thema {} ist zur Zeit {} überbelegt".format(t.titel,z.name).encode('utf8'))
+					raise ValueError("Thema {} ist zur Zeit {} überbelegt".format(t.titel,z.name).encode('utf8'))
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				if sum([self.belegungen[s,t,z] for s in p.schueler]) < sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume]):
-					raise Exception(u"Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name).encode('utf8'))
+					raise ValueError("Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name).encode('utf8'))
 		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
 		kennt_thema = Bessere((p.schueler, p.themen, p.zeiteinheiten), 0)
 		for s in p.schueler:
@@ -249,7 +249,7 @@ class Lokal(object):
 					for z in p.zeiteinheiten:
 						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
 							if self.belegungen[s,t,z] > kennt_thema[s,v,z]:
-								raise Exception(u"Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel).encode('utf8'))
+								raise ValueError("Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel))
 		self.calcrest()
 	
 	@classmethod
@@ -263,11 +263,11 @@ class Lokal(object):
 		with open(filename,"w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for s in p.schueler:
-				f.write(u"= {}\n".format(s.cname()).encode("utf8"))
+				f.write("= {}\n".format(s.cname()).encode("utf8"))
 				for z in p.zeiteinheiten:
 					t = self.stundenplan[s,z]
 					tn = t.titel if t is not None else ""
-					f.write(u"{} <-> {}\n".format(z.name, tn).encode("utf8"))
+					f.write("{} <-> {}\n".format(z.name, tn).encode("utf8"))
 	
 	def zeige_zeit(self):
 		p = self.problem
@@ -277,7 +277,7 @@ class Lokal(object):
 			for t in p.themen:
 				if gl.raum_von[t,z]:
 					topr.add_row([z.stelle, t.titel, gl.betreuer_von[t,z].cname(), gl.raum_von[t,z].name, len(self.teilnehmer_von[t,z])])
-		print topr
+		print(topr)
 	
 	def zeige_schueler(self):
 		p = self.problem
@@ -290,7 +290,7 @@ class Lokal(object):
 					topr.add_row([s.cname(), z.name, t.titel, gl.raum_von[t,z].name, p.pref[s,t]])
 				else:
 					topr.add_row([s.cname(), z.name, "", "", ""])
-		print topr
+		print(topr)
 	
 	def zeige_thema(self):
 		p = self.problem
@@ -298,7 +298,7 @@ class Lokal(object):
 		topr = PrettyTable(["ID","Thema","Zeiten","Betreuer","Benötigt","Beliebtheit","# Komp.","# Teilnehmer", "ges. # T."])
 		for t in p.themen:
 			topr.add_row([t.id,t.titel," ".join([str(z.stelle) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]) ,", ".join([b.cname() for b in p.betreuer if gl.betreuer_themen[b,t]])," ".join([str(v.id) for v in p.thema_voraussetzungen[t]]), "%.1f" % p.thema_beliebtheit[t], len([1 for s in p.schueler if p.pref[s,t] == -1])," ".join([ str(len(self.teilnehmer_von[t,z])) for z in p.zeiteinheiten if gl.betreuer_von[t,z]]),sum([ len(self.teilnehmer_von[t,z]) for z in p.zeiteinheiten if gl.betreuer_von[t,z]])])
-		print topr
+		print(topr)
 	
 	def zeige_guete(self):
 		p = self.problem
@@ -315,7 +315,7 @@ class Lokal(object):
 		topr = PrettyTable(["Präferenz","Anzahl"])
 		for g in ["Langeweile",-1,0,1,2,3]:
 			topr.add_row([g,anzpref[g]])
-		print topr
+		print(topr)
 		
 		gesamtspass = 0
 		
@@ -326,23 +326,23 @@ class Lokal(object):
 		topr = PrettyTable(["Teilnehmer","Spaß"])
 		for s in sorted(p.schueler, key=lambda s : spass[s]):
 			topr.add_row([s.cname(), "%.2f" % spass[s]])
-		print topr
+		print(topr)
 		
-		print "Gesamter Spaß: %.2f" % gesamtspass
+		print("Gesamter Spaß: %.2f" % gesamtspass)
 	
 	def mache_kursplan_tex(self):
 		p = self.problem
 		gl = self.glob
 		template = file("kursplan.tex","r").read().decode('utf8')
 		stemplate = file("kursplan-zeit.tex","r").read().decode('utf8')
-		eersetzen = {"themen": u""}
+		eersetzen = {"themen": ""}
 		for t in p.themen:
-			eersetzen["themen"] += u"\\thema{%s}{%s}\n" % (tex(t.titel), tex(t.beschreibung))
+			eersetzen["themen"] += "\\thema{%s}{%s}\n" % (tex(t.titel), tex(t.beschreibung))
 		for z in p.zeiteinheiten:
-			ersetzen = {"name": z.name, "kursliste": u""}
+			ersetzen = {"name": z.name, "kursliste": ""}
 			for t in p.themen:
 				if gl.raum_von[t,z]:
-					ersetzen["kursliste"] += u"\\hline\n%s&%s&%s&%d\\\\\n" % (tex(t.titel), tex(gl.betreuer_von[t,z].cname()), tex(gl.raum_von[t,z].name), len(self.teilnehmer_von[t,z]))
+					ersetzen["kursliste"] += "\\hline\n%s&%s&%s&%d\\\\\n" % (tex(t.titel), tex(gl.betreuer_von[t,z].cname()), tex(gl.raum_von[t,z].name), len(self.teilnehmer_von[t,z]))
 			eersetzen["plan%d" % z.stelle] = stemplate % ersetzen
 		file("kursplan-ergebnis.tex","w").write((template % eersetzen).encode('utf8'))
 		subprocess.call(["latexmk","-pdf","kursplan-ergebnis.tex","-silent"])
@@ -350,7 +350,7 @@ class Lokal(object):
 	def mache_stundenplaene_tex(self):
 		p = self.problem
 		gl = self.glob
-		schuelerplaene = u""
+		schuelerplaene = ""
 		with open("stundenplan.tex") as stundenplan_datei:
 			template = stundenplan_datei.read().decode('utf8')
 		with open("stundenplan-einzeln.tex") as stundenplan_einzeln_datei:
