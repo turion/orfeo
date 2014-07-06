@@ -118,6 +118,8 @@ class Problem(AbstractProblem):
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
 			t.titel = t.titel.replace(u"lüs", u"lüs")
 			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
+			if t.titel == "Luftschiene":
+				continue
 			if not bereich in [315, 13]:
 				themen.append(t)
 				tids[t.id] = t
