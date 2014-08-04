@@ -71,8 +71,10 @@ def getText(node):
 
 
 class Problem(AbstractProblem):
-	def __init__(self):
-		rxml = minidom.parse("inputs/r_ume.xml")
+	def __init__(self, problem_id=None):
+		if problem_id is None:
+			problem_id = "default"
+		rxml = minidom.parse("xmls/{}/r_ume.xml".format(problem_id))
 		raeume = []
 		rids = {}
 		for rx in rxml.getElementsByTagName("node"):
@@ -89,7 +91,7 @@ class Problem(AbstractProblem):
 			raeume.append(r)
 			rids[r.id] = r
 		raeume.sort(key=lambda x:r.name)
-		pxml = minidom.parse("inputs/teilnehmer_und_betreuer.xml")
+		pxml = minidom.parse("xmls/{}/teilnehmer_und_betreuer.xml".format(problem_id))
 		schueler = []
 		betreuer = []
 		pids = {}
@@ -106,7 +108,7 @@ class Problem(AbstractProblem):
 				schueler.append(p)
 		schueler.sort(key=lambda x:x.name)
 		betreuer.sort(key=lambda x:x.name)
-		txml = minidom.parse("inputs/themenauswahl.xml")
+		txml = minidom.parse("xmls/{}/themenauswahl.xml".format(problem_id))
 		themen = []
 		tids = {}
 		exkursionen = []
@@ -148,7 +150,7 @@ class Problem(AbstractProblem):
 		zeiteinheiten = []
 		nichtphysikzeiteinheiten = []
 		zids = {}
-		zxml = minidom.parse("inputs/zeiteinheiten.xml")
+		zxml = minidom.parse("xmls/{}/zeiteinheiten.xml".format(problem_id))
 		for zx in zxml.getElementsByTagName("node"):
 			if getText(zx.getElementsByTagName("Physikeinheit")[0]) == "Ja":
 				z = Zeiteinheiten(id=int(getText(zx.getElementsByTagName("id")[0])),
@@ -178,14 +180,14 @@ class Problem(AbstractProblem):
 				z.name = " -- ".join([convert(r) for r in z.name.split(" bis ")])
 				z.stelle = i
 		kompetenzen = [] # Werden glaube ich gar nicht mehr verwendet!!!
-		vxml = minidom.parse("inputs/alle_voraussetzungen.xml")
+		vxml = minidom.parse("xmls/{}/alle_voraussetzungen.xml".format(problem_id))
 		voraussetzungen = []
 		for v in vxml.getElementsByTagName("eck_voraussetzung"):
 			a = int(getText(v.getElementsByTagName("voraussetzend")[0]))
 			b = int(getText(v.getElementsByTagName("Voraussetzung")[0]))
 			if a in tids and b in tids: # FIXME wieso wird das gebraucht?
 				voraussetzungen.append((a,tids[b]))
-		wxml = minidom.parse("inputs/themenwahlen.xml")
+		wxml = minidom.parse("xmls/{}/themenwahlen.xml".format(problem_id))
 		wunschthemen = {p.id: [] for p in schueler+betreuer}
 		for wx in wxml.getElementsByTagName("node"):
 			pid = int(getText(wx.getElementsByTagName("Benutzer")[0]))
@@ -195,7 +197,7 @@ class Problem(AbstractProblem):
 					wunschthemen[pid].append(Wunschthemen(themen_id=int(getText(wx.getElementsByTagName("Thema")[0])),
 														gerne={0: -1, 25: 0, 50: 1, 75: 2, 100: 3}[w]))
 		personen_ausnahmen = []
-		axml = minidom.parse("inputs/verpassen.xml")
+		axml = minidom.parse("xmls/{}/verpassen.xml".format(problem_id))
 		for ax in axml.getElementsByTagName("user"):
 			pid = int(getText(ax.getElementsByTagName("Benutzer")[0]))
 			zid = int(getText(ax.getElementsByTagName("Zeiteinheit")[0]))
@@ -203,7 +205,7 @@ class Problem(AbstractProblem):
 				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
 										zeiteinheiten_id=zid))
 		raeume_ausnahmen = [] # TODO (nicht 2013)
-		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen)
+		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen, problem_id)
 		self.macheexkursionen()
 		
 	def macheexkursionen(self):

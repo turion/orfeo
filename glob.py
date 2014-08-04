@@ -369,14 +369,14 @@ class Global(object):
 		self.calcrest()
 	
 	@classmethod
-	def load(cls, problem, filename):
+	def load(cls, problem):
 		x = cls(problem)	
-		x._load(filename)
+		x._load("results/{}/Global.txt".format(p.problem_id))
 		return x
 	
-	def save(self, filename):
+	def save(self):
 		p = self.problem
-		with open(filename,"w") as f:
+		with open("results/{}/Global.txt".format(p.problem_id),"w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for b in p.betreuer:
 				f.write("= {}\n".format(b.cname()))

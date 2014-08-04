@@ -37,9 +37,9 @@ problem.printinfos()
 glob = None
 if args.glob:
 	glob = Global.calculate(problem)
-	glob.save("global.txt")
+	glob.save()
 else:
-	glob = Global.load(problem,"global.txt")
+	glob = Global.load(problem)
 if args.globalzeit:
 	glob.zeige_zeit()
 if args.globalbetreuer:
@@ -51,9 +51,9 @@ if args.globalraum:
 lokal = None
 if args.lokal or args.glob:
 	lokal = Lokal.calculate(problem, glob)
-	lokal.save("lokal.txt")
+	lokal.save()
 else:
-	lokal = Lokal.load(problem,glob,"lokal.txt")
+	lokal = Lokal.load(problem, glob)
 if args.lokalzeit:
 	lokal.zeige_zeit()
 if args.lokalschueler:

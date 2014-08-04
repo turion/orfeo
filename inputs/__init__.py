@@ -1,5 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+#!/usr/bin/python
 
 import pulp
 import itertools
@@ -67,7 +67,7 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen):
+	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen, problem_id):
 		self.themen = themen
 		self.exkursionen = exkursionen
 		allethemen = themen + exkursionen
@@ -82,6 +82,7 @@ class AbstractProblem(object):
 		self.ausnahmen = ausnahmen
 		self.wunschthemen = wunschthemen
 		self.raeume_ausnahmen = raeume_ausnahmen
+		self.problem_id = problem_id
 		# Ob a zur Zeit z anwesend ist
 		self.istda = Bessere((self.schueler+self.betreuer,allezeiteinheiten), 1)
 		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
@@ -168,4 +169,5 @@ class AbstractProblem(object):
 		print(topr)
 	
 	def printinfos(self):
+		print(self.problem_id, ":")
 		print(len(self.raeume), "Räume", len(self.themen), "Themen", len(self.betreuer), "Betreuer", len(self.schueler), "Schüler", len(self.zeiteinheiten), "Zeiteinheiten")

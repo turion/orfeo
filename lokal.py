@@ -255,12 +255,12 @@ class Lokal(object):
 	@classmethod
 	def load(cls, problem, glob, filename):
 		x = cls(problem, glob)
-		x._load(filename)
+		x._load("results/{}/Lokal.txt".format(p.problem_id))
 		return x
 	
 	def save(self, filename):
 		p = self.problem
-		with open(filename,"w") as f:
+		with open("results/{}/Lokal.txt".format(p.problem_id),"w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for s in p.schueler:
 				f.write("= {}\n".format(s.cname()).encode("utf8"))
@@ -351,9 +351,9 @@ class Lokal(object):
 		p = self.problem
 		gl = self.glob
 		schuelerplaene = ""
-		with open("stundenplan.tex") as stundenplan_datei:
+		with open(p.problem_id + "/" + "stundenplan.tex") as stundenplan_datei:
 			template = stundenplan_datei.read().decode('utf8')
-		with open("stundenplan-einzeln.tex") as stundenplan_einzeln_datei:
+		with open(p.problem_id + "/" + "stundenplan-einzeln.tex") as stundenplan_einzeln_datei:
 			stemplate = stundenplan_einzeln_datei.read().decode('utf8')
 		for a in p.betreuer+p.schueler:
 			ersetzen = {"name": a.cname(), "betreuerpagebreak": r"\newpage" if a in p.betreuer else ""}
