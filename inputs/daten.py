@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+raise DeprecationWarning("Das wird nicht mehr verwendet!")
+
 import sqlalchemy
 from sqlalchemy import or_
 import sqlalchemy.orm # ORM = Object-Relational Mapper
