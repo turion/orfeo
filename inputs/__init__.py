@@ -155,7 +155,7 @@ class AbstractProblem(object):
 			topr.add_row([t.titel,("WARNING: " if len(bsn) > 1 else "")+", ".join(bsn), ", ".join(rsn)])
 			# TODO Wieder einfügen
 			#if len(bs) != 0:
-				#raise Exception(u"Thema {} ({}) hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, t.id, ", ".join(bs)).encode("utf8"))
+				#raise Exception(u"Thema {} ({}) hat nicht genau einen zugeordneten Betreuer, sondern folgende: {}".format(t.titel, t.id, ", ".join(bs)))
 			if len(bs) > 1:
 				for b in bs[1:]:
 					self.pref[b,t] = 0

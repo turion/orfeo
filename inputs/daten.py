@@ -103,7 +103,7 @@ class Themen(Base):
 	def __unicode__(self):
 		return "{titel} ({beschreibung}, {kommentar})".format(titel=self.titel, beschreibung=self.beschreibung[:20].strip(), kommentar=self.kommentar[:20].strip())
 	def __str__(self):
-		return str(self).encode("utf-8")
+		return str(self)
 	@property # Auf diese Weise kann man ganz einfach einthema.aktuelle_version aufrufen
 	def aktuelle_version(self): # TODO: Das funktioniert nicht in Queries. Vllt besser mit foreign keys
 		try:
@@ -137,7 +137,7 @@ Datenversand:           {self.datenversand}
 Forenaccount:           {self.forenaccount}
 Sonstiges:              {self.kommentar}""".format(self=self, geschlecht={'m': "männlich", 'w': "weiblich", '': "nicht angegeben"}[self.geschlecht], bundesland=bundesland(self.bundesland)) # Da war auch mal der Abijahrgang dabei
 	def __str__(self):
-		return str(self).encode("utf-8")
+		return str(self)
 	@property
 	def alter(self): # TESTME
 		import datetime
