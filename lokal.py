@@ -184,27 +184,27 @@ class Lokal(object):
 				if line == "" or line[0] == "#":
 					continue
 				if line[0:2] != "= ":
-					raise ValueError("Schüler erwartet".encode("utf8"))
+					raise ValueError("Schüler erwartet")
 				line = line[2:]
 				s = None
 				for ss in p.schueler:
 					if ss.cname() == line:
 						s = ss
 				if s is None:
-					raise ValueError("Schüler \"{}\" existiert nicht".format(line).encode("utf8"))
+					raise ValueError("Schüler \"{}\" existiert nicht".format(line))
 				if s.id in gefundene_schueler:
-					raise ValueError("Schüler \"{}\" schon angegeben".format(line).encode("utf8"))
+					raise ValueError("Schüler \"{}\" schon angegeben".format(line))
 				gefundene_schueler.add(s.id)
 				for z in p.zeiteinheiten:
 					line = f.readline()
 					if line == "":
-						raise ValueError("Was macht Schüler \"{}\" zur Zeit \"{}\"?".format(s.cname(),z.name).encode("utf8"))
+						raise ValueError("Was macht Schüler \"{}\" zur Zeit \"{}\"?".format(s.cname(),z.name))
 					line = line.replace("\n","")
 					line = line.split(" <-> ")
 					if len(line) != 2:
-						raise ValueError("Falsches Format für Schüler \"{}\" zur Zeit \"{}\"".format(s.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsches Format für Schüler \"{}\" zur Zeit \"{}\"".format(s.cname(),z.name))
 					if line[0] != z.name:
-						raise ValueError("Falsche Zeit \"{}\" für Schüler \"{}\" (wollte \"{}\")".format(line[0],s.cname(),z.name).encode("utf8"))
+						raise ValueError("Falsche Zeit \"{}\" für Schüler \"{}\" (wollte \"{}\")".format(line[0],s.cname(),z.name))
 					if line[1] == "":
 						continue
 					t = None
@@ -212,28 +212,28 @@ class Lokal(object):
 						if ts.titel == line[1]:
 							t = ts
 					if t is None:
-						raise ValueError("Thema \"{}\" existiert nicht (für Schüler \"{}\" zu Zeit \"{}\")".format(line[1],s.cname(),z.name).encode("utf8"))
+						raise ValueError("Thema \"{}\" existiert nicht (für Schüler \"{}\" zu Zeit \"{}\")".format(line[1],s.cname(),z.name))
 					self.belegungen[s,t,z] = 1
 		if len(gefundene_schueler) < len(p.schueler):
-			raise ValueError("Nicht alle Schüler angegeben".encode('utf8'))
+			raise ValueError("Nicht alle Schüler angegeben")
 		# Ein Schüler besucht pro Zeiteinheit höchstens eine Veranstaltung und das auch nur, wenn er da ist
 		for s in p.schueler:
 			for z in p.zeiteinheiten:
 				if sum([ self.belegungen[s,t,z] for t in p.themen ]) > p.istda[s,z]:
-					raise ValueError("Schüler {} macht zur Zeit {} mehr als möglich (weil er nicht da ist?)".format(s.cname(),z.name).encode('utf8'))
+					raise ValueError("Schüler {} macht zur Zeit {} mehr als möglich (weil er nicht da ist?)".format(s.cname(),z.name))
 		# Ein Schüler besucht jedes Thema höchstens einmal
 		for s in p.schueler:
 			for t in p.themen:
 				if sum([self.belegungen[s,t,z] for z in p.zeiteinheiten]) > 1:
-					raise ValueError("Schüler {} besucht Thema {} mehrmals".format(s.cname(),t.titel).encode('utf8'))
+					raise ValueError("Schüler {} besucht Thema {} mehrmals".format(s.cname(),t.titel))
 		# Thema darf nur belegt werden, wenn ein Raum dafür belegt ist, und dann auch nur in der maximalen Anzahl Personen
 		for z in p.zeiteinheiten:
 			for t in p.themen:
 				if sum([self.belegungen[s,t,z] for s in p.schueler]) > sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume]):
-					raise ValueError("Thema {} ist zur Zeit {} überbelegt".format(t.titel,z.name).encode('utf8'))
+					raise ValueError("Thema {} ist zur Zeit {} überbelegt".format(t.titel,z.name))
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				if sum([self.belegungen[s,t,z] for s in p.schueler]) < sum([2 * gl.raum_belegungen[r,t,z] for r in p.raeume]):
-					raise ValueError("Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name).encode('utf8'))
+					raise ValueError("Thema {} ist zur Zeit {} unterbelegt".format(t.titel,z.name))
 		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
 		kennt_thema = Bessere((p.schueler, p.themen, p.zeiteinheiten), 0)
 		for s in p.schueler:
@@ -253,21 +253,21 @@ class Lokal(object):
 		self.calcrest()
 	
 	@classmethod
-	def load(cls, problem, glob, filename):
+	def load(cls, problem, glob):
 		x = cls(problem, glob)
-		x._load("results/{}/Lokal.txt".format(p.problem_id))
+		x._load("results/{}/Lokal.txt".format(problem.problem_id))
 		return x
 	
-	def save(self, filename):
+	def save(self):
 		p = self.problem
 		with open("results/{}/Lokal.txt".format(p.problem_id),"w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for s in p.schueler:
-				f.write("= {}\n".format(s.cname()).encode("utf8"))
+				f.write("= {}\n".format(s.cname()))
 				for z in p.zeiteinheiten:
 					t = self.stundenplan[s,z]
 					tn = t.titel if t is not None else ""
-					f.write("{} <-> {}\n".format(z.name, tn).encode("utf8"))
+					f.write("{} <-> {}\n".format(z.name, tn))
 	
 	def zeige_zeit(self):
 		p = self.problem
@@ -344,7 +344,7 @@ class Lokal(object):
 				if gl.raum_von[t,z]:
 					ersetzen["kursliste"] += "\\hline\n%s&%s&%s&%d\\\\\n" % (tex(t.titel), tex(gl.betreuer_von[t,z].cname()), tex(gl.raum_von[t,z].name), len(self.teilnehmer_von[t,z]))
 			eersetzen["plan%d" % z.stelle] = stemplate % ersetzen
-		file("kursplan-ergebnis.tex","w").write((template % eersetzen).encode('utf8'))
+		file("kursplan-ergebnis.tex","w").write((template % eersetzen))
 		subprocess.call(["latexmk","-pdf","kursplan-ergebnis.tex","-silent"])
 	
 	def mache_stundenplaene_tex(self):
@@ -394,5 +394,5 @@ class Lokal(object):
 				else:
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort))
 			schuelerplaene += stemplate % ersetzen
-		file("stundenplan-ergebnis.tex","w").write((template % {"schueler": schuelerplaene}).encode('utf8'))
+		file("stundenplan-ergebnis.tex","w").write((template % {"schueler": schuelerplaene}))
 		subprocess.call(["latexmk","-pdf","stundenplan-ergebnis.tex","-silent"])
