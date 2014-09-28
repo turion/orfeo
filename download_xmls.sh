@@ -20,7 +20,7 @@ timestamp=`date -I'seconds'`
 cd xmls
 mkdir ${timestamp}
 cd ${timestamp}
-for xmlfile in zeiteinheiten alle-voraussetzungen räume teilnehmer-und-betreuer themenauswahl themenwahlen verpassen
+for xmlfile in zeiteinheiten alle-voraussetzungen räume teilnehmer-und-betreuer themenauswahl themenwahlen verpassen raum-nicht-verfügbar
 do
 	wget --keep-session-cookies --save-cookies $cookies --load-cookies $cookies "${site}orfeo/${id}/${xmlfile}.xml" 
 done

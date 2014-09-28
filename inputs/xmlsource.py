@@ -17,23 +17,26 @@ class Personen(object):
 
 
 class Themen(object):
-	def __init__(self, id, titel, beschreibung, beamer):
+	def __init__(self, id, titel, beschreibung, beamer, laenge=1):
 		self.id = id
 		self.titel = titel
 		self.beschreibung = beschreibung
 		self.beamer = beamer
+		self.laenge = laenge
 	def gutegroesse(self):
 		return 8 # TODO sinnvollere größe (z.B. abhängig davon, ob's ein Experiment ist)
 
 
 class Zeiteinheiten(object):
-	def __init__(self, id, stelle, name, beschreibung=None, titel=None, ort=None):
+	def __init__(self, id, stelle, name, beschreibung=None, titel=None, ort=None, exkursion=None, timestamp=None):
 		self.id = id
 		self.stelle = stelle
 		self.name = name
 		self.beschreibung = beschreibung
 		self.titel = titel
 		self.ort = ort
+		self.exkursion = exkursion
+		self.timestamp = timestamp
 
 
 class Raeume(object):
@@ -62,6 +65,11 @@ class Ausnahmen(object):
 		self.nimmt_teil = nimmt_teil
 		self.zeiteinheiten_id = zeiteinheiten_id
 
+class RaumAusnahme(object):
+	def __init__(self, raeume_id, zeiteinheiten_id):
+		self.raeume_id = raeume_id
+		self.zeiteinheiten_id = zeiteinheiten_id
+
 
 def getText(node):
 	for c in node.childNodes:
@@ -74,7 +82,7 @@ class Problem(AbstractProblem):
 	def __init__(self, problem_id=None):
 		if problem_id is None:
 			problem_id = "default"
-		rxml = minidom.parse("xmls/{}/r_ume.xml".format(problem_id))
+		rxml = minidom.parse("xmls/{}/räume.xml".format(problem_id))
 		raeume = []
 		rids = {}
 		for rx in rxml.getElementsByTagName("node"):
@@ -91,9 +99,10 @@ class Problem(AbstractProblem):
 			raeume.append(r)
 			rids[r.id] = r
 		raeume.sort(key=lambda x:r.name)
-		pxml = minidom.parse("xmls/{}/teilnehmer_und_betreuer.xml".format(problem_id))
+		pxml = minidom.parse("xmls/{}/teilnehmer-und-betreuer.xml".format(problem_id))
 		schueler = []
 		betreuer = []
+		organisatoren = []
 		pids = {}
 		for u in pxml.getElementsByTagName("user"):
 			rollen = getText(u.getElementsByTagName("Rollen")[0])
@@ -106,6 +115,8 @@ class Problem(AbstractProblem):
 				betreuer.append(p)
 			else:
 				schueler.append(p)
+			if "Organisator" in rollen:
+				organisatoren.append(p)
 		schueler.sort(key=lambda x:x.name)
 		betreuer.sort(key=lambda x:x.name)
 		txml = minidom.parse("xmls/{}/themenauswahl.xml".format(problem_id))
@@ -113,19 +124,19 @@ class Problem(AbstractProblem):
 		tids = {}
 		exkursionen = []
 		exids = {}
+		#TODO WAS IST DAS DENN
 		for tx in txml.getElementsByTagName("node"):
 			t = Themen(id=int(getText(tx.getElementsByTagName("id")[0])),
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
 			           beschreibung=getText(tx.getElementsByTagName("Beschreibung")[0]),
-			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"))
-			t.titel = t.titel.replace("lüs", "lüs")
+			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"),
+			           laenge=int(getText(tx.getElementsByTagName("L-nge")[0]) or 1)
+			           )
 			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
-			if t.titel == "Luftschiene":
-				continue
-			if not bereich in [315, 13]:
+			if not bereich in [315, 13]:#TODO WAS IST DAS DENN
 				themen.append(t)
 				tids[t.id] = t
-				rid = getText(tx.getElementsByTagName("Raum")[0])
+				rid = getText(tx.getElementsByTagName("Raum")[0]) #Spezialräume eintragen
 				if rid != '':
 					rid = int(rid)
 					if rid in rids:
@@ -136,16 +147,6 @@ class Problem(AbstractProblem):
 			elif bereich == 315:
 				exkursionen.append(t)
 				exids[t.id] = t
-		# Mikhail hardgecodet
-		self.mikhail = [p for p in betreuer if p.id == 442][0]
-		self.mikhail_1 = [t for t in themen if t.id == 304][0]
-		self.mikhail_2 = [t for t in themen if t.id == 305][0]
-		self.mikhail_3 = [t for t in themen if t.id == 306][0]
-		self.mikhail_4 = Themen(id=self.mikhail_3.id + 100000,
-		                        titel=self.mikhail_3.titel + " (sequel)",
-		                        beschreibung=self.mikhail_3.beschreibung,
-		                        beamer=self.mikhail_3.beamer)
-		themen.append(self.mikhail_4)
 		themen.sort(key=lambda x: x.titel)
 		zeiteinheiten = []
 		nichtphysikzeiteinheiten = []
@@ -155,7 +156,9 @@ class Problem(AbstractProblem):
 			if getText(zx.getElementsByTagName("Physikeinheit")[0]) == "Ja":
 				z = Zeiteinheiten(id=int(getText(zx.getElementsByTagName("id")[0])),
 					              name=getText(zx.getElementsByTagName("Zeit")[0]),
-					              stelle=None)
+					              stelle=None,
+					              timestamp=int(getText(zx.getElementsByTagName("timestamp")[0]))
+					              )
 				zeiteinheiten.append(z)
 				zids[z.id] = z
 			else:
@@ -164,13 +167,18 @@ class Problem(AbstractProblem):
 					              stelle=None,
 					              beschreibung=getText(zx.getElementsByTagName("Beschreibung")[0]),
 					              titel=getText(zx.getElementsByTagName("Titel")[0]),
-					              ort=getText(zx.getElementsByTagName("Ort")[0]))
+					              exkursion=getText(zx.getElementsByTagName("Exkursion")[0]),
+					              ort=getText(zx.getElementsByTagName("Ort")[0]),
+					              timestamp=int(getText(zx.getElementsByTagName("timestamp")[0]))
+					              )
 				nichtphysikzeiteinheiten.append(z)
 				zids[z.id] = z
-				if z.titel == "Exkursionen":
+				if z.exkursion not in ("Ja", "Nein", ""):
+					raise ValueError(z.exkursion)
+				if z.exkursion == "Ja":
 					self.exkursionenzeit = z
 		for zs in [zeiteinheiten, nichtphysikzeiteinheiten]:
-			zs.sort(key=lambda z: z.name)
+			zs.sort(key=lambda z: z.timestamp)
 			for i, z in enumerate(zs):
 				def convert(r):
 					from datetime import datetime, timedelta
@@ -180,7 +188,7 @@ class Problem(AbstractProblem):
 				z.name = " -- ".join([convert(r) for r in z.name.split(" bis ")])
 				z.stelle = i
 		kompetenzen = [] # Werden glaube ich gar nicht mehr verwendet!!!
-		vxml = minidom.parse("xmls/{}/alle_voraussetzungen.xml".format(problem_id))
+		vxml = minidom.parse("xmls/{}/alle-voraussetzungen.xml".format(problem_id))
 		voraussetzungen = []
 		for v in vxml.getElementsByTagName("eck_voraussetzung"):
 			a = int(getText(v.getElementsByTagName("voraussetzend")[0]))
@@ -204,8 +212,14 @@ class Problem(AbstractProblem):
 			if pid in pids and zid in zids:
 				personen_ausnahmen.append(Ausnahmen(nimmt_teil=NimmtTeil(pids[pid]),
 										zeiteinheiten_id=zid))
-		raeume_ausnahmen = [] # TODO (nicht 2013)
-		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen, problem_id)
+		raeume_ausnahmen = []
+		raum_nicht_verfuegbar_xml = minidom.parse("xmls/{}/raum-nicht-verfügbar.xml".format(problem_id))
+		for rx in raum_nicht_verfuegbar_xml.getElementsByTagName("node"):
+			rid = int(getText(rx.getElementsByTagName("id")[0]))
+			zid = int(getText(rx.getElementsByTagName("zid")[0]))
+			if rid in rids and zid in zids:
+				raeume_ausnahmen.append(RaumAusnahme(raeume_id=rid, zeiteinheiten_id=zid))
+		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren)
 		self.macheexkursionen()
 		
 	def macheexkursionen(self):
@@ -226,7 +240,7 @@ class Problem(AbstractProblem):
 				anzpref[self.pref[s,t]] += 1
 				self.exkursionenfuelle[t] += 1
 				self.exkursionenzuordnung[s] = t
-		for t in self.exkursionen:
+		for t in self.exkursionen: #TODO 2015 In Gänze verstehen und vielleicht eine besser Lösung finden
 			if t.titel == "Astronomisch-Physikalisches Kabinett":
 				assert self.exkursionenfuelle[t] <= 45
 			elif t.titel == "Bergpark Wilhelmshöhe":
@@ -237,7 +251,7 @@ class Problem(AbstractProblem):
 			elif t.titel == "Technikmuseum":
 				assert self.exkursionenfuelle[t] <= 28
 			else:
-				assert False
+				assert self.exkursionenfuelle[t] <= 50 # Vernünftiger Standardwert?
 		topr = PrettyTable(["Exkursion", "# Schüler"])
 		for t in self.exkursionen:
 			topr.add_row([t.titel, self.exkursionenfuelle[t]])

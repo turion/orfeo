@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os
 import pulp
 from prettytable import PrettyTable # Das ist ein Pythonpaket
 from inputs import Bessere, PulpMatrix, lpsolver
@@ -12,6 +13,7 @@ class Global(object):
 	
 	def _calculate(self):
 		p = self.problem
+		print([(z.titel, z.name, z.stelle) for z in p.zeiteinheiten])
 		prob = pulp.LpProblem("Stundenplan", pulp.LpMaximize)
 		
 		raum_belegungen = PulpMatrix("raum_belegungen", (p.raeume, p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
@@ -23,12 +25,34 @@ class Global(object):
 		
 		# Dadurch wird automatisch pro (Thema, Zeit) nur ein Raum belegt
 		thema_findet_dann_statt = PulpMatrix("thema_findet_dann_statt", (p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
+		fortsetzung_findet_dann_statt = PulpMatrix("fortsetzung_findet_dann_statt", (p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
 		for t in p.themen:
 			for z in p.zeiteinheiten:
 				prob += thema_findet_dann_statt[t,z] == pulp.lpSum([raum_belegungen[r,t,z] for r in p.raeume])
-				if z.name == "Fr 11:00 -- Fr 12:45":
-					if t.titel in ["Beugung am Vielfachspalt", "Elektrische Blackboxen"]:
-						prob += thema_findet_dann_statt[t,z] == 1
+				prob += fortsetzung_findet_dann_statt[t,z] <= thema_findet_dann_statt[t,z]
+		#TODO Der richtige Ort, um softzucoden, welches Thema wann stattfindet
+		# Zweistündige Themen
+			if t.laenge not in (1,2):
+				raise ValueError("Thema {} hat verbotene Länge {}".format(t.titel, t.laenge))
+			if t.laenge == 2:
+				print("Zweieinheitiges Thema {}".format(t.titel))
+				for z, fortsetzung_z in zip(p.zeiteinheiten[:-1], p.zeiteinheiten[1:]):
+					if (fortsetzung_z.timestamp - z.timestamp) < 0:
+						raise ValueError("Zeiteinheiten falsch sortiert")
+					prob += fortsetzung_findet_dann_statt[t,fortsetzung_z] <= thema_findet_dann_statt[t,z]
+					prob += thema_findet_dann_statt[t,z] + thema_findet_dann_statt[t,fortsetzung_z] -fortsetzung_findet_dann_statt[t,fortsetzung_z] - fortsetzung_findet_dann_statt[t,z] <= 1
+					prob += fortsetzung_findet_dann_statt[t, fortsetzung_z] == thema_findet_dann_statt[t,z] - fortsetzung_findet_dann_statt[t,z]
+					if (fortsetzung_z.timestamp - z.timestamp) < 60*60*3: # Direkt nebeneinanderliegende Zeiteinheiten (ohne große Pause dazwischen)
+						prob += fortsetzung_findet_dann_statt[t,fortsetzung_z] + fortsetzung_findet_dann_statt[t,z] <= 1
+						#for raum in p.raeume: # Nicht in irgendeinem Raum, sondern im selben #FIXME Bug: Das sollte nur dann gefordert werden, wenn denn auch eine Fortsetzung stattfindet. 
+							#prob += raum_belegungen[r,t,fortsetzung_z] == raum_belegungen[r,t,z]
+					else: # Nicht zerteilen
+						prob += thema_findet_dann_statt[t,fortsetzung_z] == 0
+				letzte_zeiteinheit = p.zeiteinheiten[-1]
+				prob += thema_findet_dann_statt[t,letzte_zeiteinheit] - fortsetzung_findet_dann_statt[t,letzte_zeiteinheit] == 0 # Wenn es am Ende noch mal stattfindet, dann nur als Fortsetzung
+			else:
+				for z in p.zeiteinheiten:
+					prob += fortsetzung_findet_dann_statt[t,z] == 0
 		
 		# Dafür sorgen, dass es genug Kurse für alle gibt
 		for z in p.zeiteinheiten:
@@ -66,9 +90,9 @@ class Global(object):
 			for b in p.betreuer:
 				# Jeder Betreuer kann pro Zeit nur ein Thema betreuen und auch das nur, wenn er da ist
 				prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) <= p.istda[b,z]
-				# Gastbetreuer wollen immer was zu tun haben
-				if b.gastbetreuer:
-					prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) == p.istda[b,z]
+				# Gastbetreuer wollen immer was zu tun haben # Nein, eigentlich nicht, kann zu Bugs führen wenn deren Experiment z.B. nicht immer verfügbar ist
+				#if b.gastbetreuer:
+					#prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen]) == p.istda[b,z]
 			for t in p.themen:
 				# Thema findet nur statt, wenn ein Betreuer das macht
 				prob += thema_findet_dann_statt[t,z] == pulp.lpSum([betreuer_belegungen[b,t,z] for b in p.betreuer])
@@ -104,17 +128,13 @@ class Global(object):
 		for t in p.themen:
 			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten])
 		
-		# Zu jedem Zeitpunkt sollten >= 3 Betreuer frei haben
+		# Zu jedem Zeitpunkt sollten >= 2 Betreuer frei haben
 		for z in p.zeiteinheiten:
 			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.betreuer) >= 2
-		
-		# Mikhails hardgecodet:
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[2]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_1,p.zeiteinheiten[4]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_2,p.zeiteinheiten[5]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_3,p.zeiteinheiten[6]] == 1
-		prob += betreuer_belegungen[p.mikhail,p.mikhail_4,p.zeiteinheiten[7]] == 1
-		
+		# Zu jedem Zeitpunkt sollte 1 Organisator verfügbar sein.
+		for z in p.zeiteinheiten:
+			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.organisatoren) >= 1
+			
 		#korrelationen_einbeziehen = False
 		#if korrelationen_einbeziehen:
 			#da_muss_einiges_umgeschrieben_werden_weil_thema_findet_dann_statt_jetzt_eine_bessere_matrix_ist
@@ -157,16 +177,15 @@ class Global(object):
 		
 		print("Optimierung")
 		
-		#for t in p.themen:
-			#for g in p.gebiete:
-				#if t in p.beibringende[g]:
-					##prob += pulp.lpSum([z.stelle*thema_findet_dann_statt[t,z] for z in p.zeiteinheiten]) <= 4*thema_findet_so_oft_statt[t]
-					#prob += pulp.lpSum([z.stelle*thema_findet_dann_statt[t,z] for z in p.zeiteinheiten if z.stelle <= 4]) >= 1
-		
-		platz = PulpMatrix("platz", (p.themen,p.zeiteinheiten), 0, None, pulp.LpContinuous)
+		tatsaechlicher_platz = PulpMatrix("tatsaechlicher_platz", (p.themen, p.zeiteinheiten), 0, None, pulp.LpContinuous)
+		platz = PulpMatrix("platz", (p.themen, p.zeiteinheiten), 0, None, pulp.LpContinuous)
+		#FIXME
 		for t in p.themen:
 			for z in p.zeiteinheiten:
-				prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse()
+				#prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse() # Fabians
+				prob += tatsaechlicher_platz[t,z] == pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume])
+				prob += platz[t,z] <= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume])
+				#prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) * 0.5
 				for v in p.thema_voraussetzungen[t]:
 					prob += platz[t,z] <= pulp.lpSum([platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle])
 		
@@ -195,25 +214,25 @@ class Global(object):
 		gesamtangebot = pulp.lpSum([thema_findet_dann_statt[t,z] for t in p.themen for z in p.zeiteinheiten])
 		
 		#reihenfolge = []
-		#for g in p.gebiete:
-			#for t1 in p.beibringende[g]:
-				#for t2 in p.verwendende[g]:
-					#for z1 in p.zeiteinheiten:
-						#for z2 in p.zeiteinheiten:
-							#var = pulp.LpVariable("reihenfolge_helfer_{}_{}_{}".format(t1.id, t2.id, z1.id, z2.id), 0, 1, pulp.LpInteger)
-							#prob += var <= thema_findet_dann_statt[t1,z1]
-							#prob += var <= thema_findet_dann_statt[t2,z2]
-							#reihenfolge.append(var)
-		#reihenfolge = pulp.lpSum(reihenfolge)
+		#for zuerst, danach in p.voraussetzungen:
+			#for i, z1 in enumerate(p.zeiteinheiten):
+				#for z2 in p.zeiteinheiten[i:]:
+					#var = pulp.LpVariable("reihenfolge_helfer_{}_{}_{}_{}".format(zuerst.id, danach.id, z1.id, z2.id), 0, 1, pulp.LpInteger)
+					#prob += var <= thema_findet_dann_statt[zuerst,z1]
+					#prob += var <= thema_findet_dann_statt[danach,z2]
+					#reihenfolge.append(var)
+		#reihenfolge = pulp.lpSum(reihenfolge) #TODO Was sollte das jetzt nochmal?
+		
 		
 		# Die gewichtete Optimierungsfunktion:
 		prob += beliebtheit + gesamtangebot #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
 		
 		# Gerechtigkeitsdummys
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
-		# Jeder Betreuer sollte mindestens 7 Mal etwas tun
+		# Jeder Betreuer, sofern er kein Organisator ist, sollte mindestens 7 Mal etwas tun
 		for b in p.betreuer:
-			prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(7,sum(p.istda[b,z] for z in p.zeiteinheiten))
+			if b not in p.organisatoren:
+				prob += pulp.lpSum([betreuer_belegungen[b,t,z] for t in p.themen for z in p.zeiteinheiten]) >= min(7,sum(p.istda[b,z] for z in p.zeiteinheiten))
 		# Jeder Betreuer sollte mindestens 2 verschiedene Themen haben
 		# TODO Wieder einfügen, sobald möglich
 		#for b in p.betreuer:
@@ -227,7 +246,19 @@ class Global(object):
 		self.raum_belegungen = raum_belegungen.werte()
 		self.betreuer_themen = betreuer_themen.werte()
 		self.betreuer_belegungen = betreuer_belegungen.werte()
-		
+		self.fortsetzungen = fortsetzung_findet_dann_statt.werte()
+
+		#for thema in p.themen:
+			#if thema.laenge == 2:
+				#print(thema.titel)
+				#print([self.fortsetzungen[thema, zeiteinheit] for zeiteinheit in p.zeiteinheiten])
+		for zeiteinheit in p.zeiteinheiten:
+			for thema in p.themen:
+				if thema_findet_dann_statt[thema, zeiteinheit] == 1:
+					if platz.werte()[thema, zeiteinheit] == 0:
+						print("Kein Platz![?}", thema.titel, zeiteinheit.name)
+					else:
+						print("Platz", thema.titel, zeiteinheit.name)
 		self.calcrest()
 	
 	def calcrest(self):
@@ -376,7 +407,8 @@ class Global(object):
 	
 	def save(self):
 		p = self.problem
-		with open("results/{}/Global.txt".format(p.problem_id),"w") as f:
+		os.makedirs("results/{}".format(p.problem_id), exist_ok=True)
+		with open("results/{}/Global.txt".format(p.problem_id), "w") as f:
 			f.write("# Du darfst diese Datei editieren um den Stundenplan zu ändern\n")
 			for b in p.betreuer:
 				f.write("= {}\n".format(b.cname()))

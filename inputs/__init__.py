@@ -67,7 +67,7 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen, problem_id):
+	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren):
 		self.themen = themen
 		self.exkursionen = exkursionen
 		allethemen = themen + exkursionen
@@ -83,6 +83,7 @@ class AbstractProblem(object):
 		self.wunschthemen = wunschthemen
 		self.raeume_ausnahmen = raeume_ausnahmen
 		self.problem_id = problem_id
+		self.organisatoren = organisatoren
 		# Ob a zur Zeit z anwesend ist
 		self.istda = Bessere((self.schueler+self.betreuer,allezeiteinheiten), 1)
 		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
@@ -97,9 +98,6 @@ class AbstractProblem(object):
 			for w in W:
 				self.pref[a,w.themen_id] = w.gerne or 0 # FIXME das "or 0" ist sehr seltsam und sollte nicht gebraucht werden
 				hatmeinung[a,w.themen_id] = 1
-				if w.themen_id == self.mikhail_3.id:
-					self.pref[a,self.mikhail_4] = w.gerne or 0
-					hatmeinung[a,self.mikhail_4] = 1
 		for a in self.betreuer:  # Gastbetreuer bekommen nichts, was sie nicht unbedingt wollen
 			if not hasattr(a, "gastbetreuer"):
 				a.gastbetreuer = False

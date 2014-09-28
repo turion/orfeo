@@ -5,6 +5,7 @@ import pulp
 import subprocess
 from prettytable import PrettyTable # Das ist ein Pythonpaket
 from inputs import Bessere, PulpMatrix, lpsolver
+import os
 
 # Wandelt den String a in ein für eine TeX-Datei passendes Format um
 def tex(a):
@@ -49,15 +50,10 @@ class Lokal(object):
 		# Ein Schüler besucht pro Zeiteinheit höchstens eine Veranstaltung und das auch nur, wenn er da ist
 		# Ein Schüler kann zu einer Zeit im Prinzip frei haben, das wird aber sehr vermieden (hohe Strafe in der Bewertungsfunktion)
 		for a in p.schueler:
-			zeitdavor = None
 			for z in p.zeiteinheiten:
 				la = pulp.lpSum([ belegungen[a, t, z] for t in p.themen ]) - p.istda[a, z]
 				prob += la <= 0
 				langeweile.append(1000*la)
-				# Mikhail
-				if zeitdavor is not None:
-					prob += belegungen[a,p.mikhail_3,zeitdavor] == belegungen[a,p.mikhail_4,z]
-				zeitdavor = z
 		langeweile = pulp.lpSum(langeweile)
 		print(1)
 		
@@ -65,7 +61,13 @@ class Lokal(object):
 		schuelerthemen = PulpMatrix("schuelerthemen", (p.schueler, p.themen), 0, 1, pulp.LpInteger)
 		for a in p.schueler:
 			for t in p.themen:
-				prob += schuelerthemen[a,t] == pulp.lpSum(belegungen[a,t,z] for z in p.zeiteinheiten)
+				if t.laenge == 1:
+					prob += schuelerthemen[a,t] == pulp.lpSum(belegungen[a,t,z] for z in p.zeiteinheiten)
+				elif t.laenge ==2:
+					for z, fortsetzung_z in zip(p.zeiteinheiten[:-1],p.zeiteinheiten[1:]):
+						if p.fortsetzungen[t,fortsetzung_z] == 1:
+							prob += belegungen[a,t,z] == belegungen[a,t,fortsetzung_z]
+					prob += schuelerthemen[a,t]*2 == pulp.lpSum(belegungen[a,t,z] for z in p.zeiteinheiten) #TODO Funktioniert das?
 		print(2)
 		
 		# Thema darf nur belegt werden, wenn ein Raum dafür belegt ist, und dann auch nur in der maximalen Anzahl Personen

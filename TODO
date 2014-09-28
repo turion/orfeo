@@ -9,3 +9,5 @@ Timestamps
 inputs.daten kann gelöscht oder deaktiviert werden, da Testdaten im XML-Format vorhanden sind
 Riesenfunktionen in kleinere aufbrechen
 ValueErrors wahlweise als Warnungen
+Noch mehr Ausnahmen als Daten
+	So z.B. Mikhails Themen zu festen Zeiten

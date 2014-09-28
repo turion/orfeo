@@ -9,7 +9,7 @@ import sys
 import argparse
 
 parser = argparse.ArgumentParser(description="Mache etwas mit einem Stundenplan")
-parser.add_argument("-x", "--xml", action="store_true", help="Wählt eine XML-Datei als Eingabe, und nicht die Datenbank")
+parser.add_argument("xml", help="Der Bezeichner des XML-Datensatzes, von dem die Berechnung durchgeführt wird")
 parser.add_argument("-g", "--global", action="store_true", dest="glob", help="Berechnet den globalen Stundenplan (neu)")
 parser.add_argument("-gz", "--globalzeit", action="store_true", help="Zeit|Thema|Betreuer|Raum")
 parser.add_argument("-gb", "--globalbetreuer", action="store_true", help="Betreuer|Zeit|Thema|Raum|Präferenz")
@@ -28,13 +28,9 @@ from glob import Global
 from lokal import Lokal
 #import daten
 
-if args.xml:
-	import inputs.xmlsource as input_backend
-else:
-	import inputs.daten as input_backend
-problem = input_backend.Problem()
+import inputs.xmlsource as input_backend
+problem = input_backend.Problem(args.xml)
 problem.printinfos()
-glob = None
 if args.glob:
 	glob = Global.calculate(problem)
 	glob.save()
@@ -49,7 +45,7 @@ if args.globalthema:
 if args.globalraum:
 	glob.zeige_raum()
 lokal = None
-if args.lokal or args.glob:
+if args.lokal:
 	lokal = Lokal.calculate(problem, glob)
 	lokal.save()
 else:
