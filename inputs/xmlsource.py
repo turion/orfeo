@@ -17,11 +17,12 @@ class Personen(object):
 
 
 class Themen(object):
-	def __init__(self, id, titel, beschreibung, beamer, laenge=1):
+	def __init__(self, id, titel, beschreibung, beamer, typ, laenge=1):
 		self.id = id
 		self.titel = titel
 		self.beschreibung = beschreibung
 		self.beamer = beamer
+		self.typ = typ
 		self.laenge = laenge
 	def gutegroesse(self):
 		return 8 # TODO sinnvollere größe (z.B. abhängig davon, ob's ein Experiment ist)
@@ -130,6 +131,7 @@ class Problem(AbstractProblem):
 			           titel=getText(tx.getElementsByTagName("Thema")[0]),
 			           beschreibung=getText(tx.getElementsByTagName("Beschreibung")[0]),
 			           beamer=(getText(tx.getElementsByTagName("Beamer")[0]) == "Ja"),
+			           typ=getText(tx.getElementsByTagName("Typ")[0]),
 			           laenge=int(getText(tx.getElementsByTagName("L-nge")[0]) or 1)
 			           )
 			bereich = int(getText(tx.getElementsByTagName("Bereich")[0]))
@@ -145,8 +147,9 @@ class Problem(AbstractProblem):
 							raise Exception("Mehrere Themen teilen sich einen Spezialraum")
 						r.themen_id = t.id
 			elif bereich == 315:
-				exkursionen.append(t)
-				exids[t.id] = t
+				if t.id != 466: #FIXME Von 2014 U-Boot-Führung
+					exkursionen.append(t)
+					exids[t.id] = t
 		themen.sort(key=lambda x: x.titel)
 		zeiteinheiten = []
 		nichtphysikzeiteinheiten = []
@@ -195,6 +198,12 @@ class Problem(AbstractProblem):
 			b = int(getText(v.getElementsByTagName("Voraussetzung")[0]))
 			if a in tids and b in tids: # FIXME wieso wird das gebraucht?
 				voraussetzungen.append((a,tids[b]))
+		mxml = minidom.parse("xmls/{}/muss-stattfinden-an.xml".format(problem_id))
+		muss_stattfinden_an = []
+		for m in mxml.getElementsByTagName("node"):
+			tid = int(getText(m.getElementsByTagName("tid")[0]))
+			zid = int(getText(m.getElementsByTagName("zid")[0]))
+			muss_stattfinden_an.append((tids[tid], zids[zid]))
 		wxml = minidom.parse("xmls/{}/themenwahlen.xml".format(problem_id))
 		wunschthemen = {p.id: [] for p in schueler+betreuer}
 		for wx in wxml.getElementsByTagName("node"):
@@ -219,12 +228,12 @@ class Problem(AbstractProblem):
 			zid = int(getText(rx.getElementsByTagName("zid")[0]))
 			if rid in rids and zid in zids:
 				raeume_ausnahmen.append(RaumAusnahme(raeume_id=rid, zeiteinheiten_id=zid))
-		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren)
+		AbstractProblem.__init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, personen_ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren, muss_stattfinden_an)
 		self.macheexkursionen()
 		
-	def macheexkursionen(self):
+	def macheexkursionen_alt(self):
 		import random
-		random.seed(43)
+		random.seed()
 		# Exkursionen zuordnen
 		self.exkursionenfuelle = Bessere((self.exkursionen,), 0)
 		self.exkursionenzuordnung = Bessere((self.schueler,), None)
@@ -251,12 +260,38 @@ class Problem(AbstractProblem):
 			elif t.titel == "Technikmuseum":
 				assert self.exkursionenfuelle[t] <= 28
 			else:
-				assert self.exkursionenfuelle[t] <= 50 # Vernünftiger Standardwert?
-		topr = PrettyTable(["Exkursion", "# Schüler"])
+				if not self.exkursionenfuelle[t] <= 56: # Vernünftiger Standardwert?
+					raise Exception("{} zu voll ({})".format(t.titel, self.exkursionenfuelle[t]))
+		self.zeigeexkursionen()
+	def macheexkursionen(self):
+		import random
+		random.seed()
+		exkursion_max = {
+			468: 100, #Laboe
+			467: 20, #Botanischer Garten
+			473: 40
+		}
+		self.exkursionenfuelle = Bessere((self.exkursionen,), 0)
+		self.exkursionenzuordnung = Bessere((self.schueler+self.betreuer,), None)
+		self.anzpref = {-1: 0, 0: 0, 1: 0, 2: 0, 3: 0}
+		for pref in range(3,-2,-1):
+			for e in self.exkursionen:
+				wollende = list(filter(lambda person: self.pref[person,e] == pref and self.exkursionenzuordnung[person] is None, self.schueler+self.betreuer))
+				#input([person.name for person in wollende])
+				while wollende and self.exkursionenfuelle[e] < exkursion_max[e.id]:
+					person = random.choice(wollende)
+					#input("Ordne {} zu {}".format(person.name, e.titel))
+					self.exkursionenzuordnung[person] = e
+					self.exkursionenfuelle[e] += 1
+					self.anzpref[pref] += 1
+					wollende = list(filter(lambda person: self.pref[person,e] == pref and self.exkursionenzuordnung[person] is None, self.schueler+self.betreuer))
+		self.zeigeexkursionen()
+	def zeigeexkursionen(self):
+		topr = PrettyTable(["Exkursion", "# Person"])
 		for t in self.exkursionen:
 			topr.add_row([t.titel, self.exkursionenfuelle[t]])
 		print(topr)
-		topr = PrettyTable(["Präferenz", "# Schüler mit dieser Exkursions-Präferenz"])
+		topr = PrettyTable(["Präferenz", "# Personen mit dieser Exkursions-Präferenz"])
 		for p in [-1,0,1,2,3]:
-			topr.add_row([p, anzpref[p]])
+			topr.add_row([p, self.anzpref[p]])
 		print(topr)

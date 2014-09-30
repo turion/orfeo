@@ -25,6 +25,10 @@ class Global(object):
 		
 		# Dadurch wird automatisch pro (Thema, Zeit) nur ein Raum belegt
 		thema_findet_dann_statt = PulpMatrix("thema_findet_dann_statt", (p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
+		for t, z in p.muss_stattfinden_an:
+			#print("{} muss stattfinden an {}".format(t.titel, z.name))
+			prob += thema_findet_dann_statt[t,z] == 1
+
 		fortsetzung_findet_dann_statt = PulpMatrix("fortsetzung_findet_dann_statt", (p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
 		for t in p.themen:
 			for z in p.zeiteinheiten:
@@ -35,7 +39,7 @@ class Global(object):
 			if t.laenge not in (1,2):
 				raise ValueError("Thema {} hat verbotene Länge {}".format(t.titel, t.laenge))
 			if t.laenge == 2:
-				print("Zweieinheitiges Thema {}".format(t.titel))
+				#print("Zweieinheitiges Thema {}".format(t.titel))
 				for z, fortsetzung_z in zip(p.zeiteinheiten[:-1], p.zeiteinheiten[1:]):
 					if (fortsetzung_z.timestamp - z.timestamp) < 0:
 						raise ValueError("Zeiteinheiten falsch sortiert")
@@ -47,7 +51,7 @@ class Global(object):
 						#for raum in p.raeume: # Nicht in irgendeinem Raum, sondern im selben #FIXME Bug: Das sollte nur dann gefordert werden, wenn denn auch eine Fortsetzung stattfindet. 
 							#prob += raum_belegungen[r,t,fortsetzung_z] == raum_belegungen[r,t,z]
 					else: # Nicht zerteilen
-						prob += thema_findet_dann_statt[t,fortsetzung_z] == 0
+						prob += fortsetzung_findet_dann_statt[t,fortsetzung_z] == 0
 				letzte_zeiteinheit = p.zeiteinheiten[-1]
 				prob += thema_findet_dann_statt[t,letzte_zeiteinheit] - fortsetzung_findet_dann_statt[t,letzte_zeiteinheit] == 0 # Wenn es am Ende noch mal stattfindet, dann nur als Fortsetzung
 			else:
@@ -124,9 +128,10 @@ class Global(object):
 				elif p.pref[b,t] == -1: # Auf keinen Fall
 					prob += betreuer_themen[b,t] == 0
 		
+		
 		thema_findet_so_oft_statt = PulpMatrix("thema_findet_so_oft_statt", (p.themen,), 0, None, pulp.LpInteger)
 		for t in p.themen:
-			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten])
+			prob += thema_findet_so_oft_statt[t] == pulp.lpSum([thema_findet_dann_statt[t,z] for z in p.zeiteinheiten]) - pulp.lpSum([fortsetzung_findet_dann_statt[t,z] for z in p.zeiteinheiten])
 		
 		# Zu jedem Zeitpunkt sollten >= 2 Betreuer frei haben
 		for z in p.zeiteinheiten:
@@ -134,7 +139,11 @@ class Global(object):
 		# Zu jedem Zeitpunkt sollte 1 Organisator verfügbar sein.
 		for z in p.zeiteinheiten:
 			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for b in p.organisatoren) >= 1
-			
+		# Jeder Organisator sollte von 4 Stunden 1 Freistunde haben
+		for b in p.organisatoren:
+			#print("Stelle frei {}".format(b.name))
+			prob += pulp.lpSum(p.istda[b,z]-sum(betreuer_belegungen[b,t,z] for t in p.themen) for z in p.zeiteinheiten)*4 >= sum(p.istda[b,z] for z in p.zeiteinheiten) - 3
+		
 		#korrelationen_einbeziehen = False
 		#if korrelationen_einbeziehen:
 			#da_muss_einiges_umgeschrieben_werden_weil_thema_findet_dann_statt_jetzt_eine_bessere_matrix_ist
@@ -173,25 +182,62 @@ class Global(object):
 			##TODO: Mit Korrelationen was anstellen
 			##TODO: Korrelationen von Einführungsvorträgen (?)
 			
-		#TODO: Bei Bedarf hier noch Schranken auf thema_findet_so_oft_statt
 		
 		print("Optimierung")
 		
+		#FIXME: Bei Bedarf hier noch Schranken auf thema_findet_so_oft_statt
+		for thema in p.themen:
+			prob += thema_findet_so_oft_statt[thema] <= 4
+			prob += thema_findet_so_oft_statt[thema] >= 1
+			if p.thema_beliebtheit[thema] > 26: #TODO vielleicht lieber die 15 beliebtesten Themen oder so
+				prob += thema_findet_so_oft_statt[thema] >= 2
+
+		# Immer genug akzeptierte Themen für alle Schüler, außer für sehr wählerische
+		for s in p.schueler:
+			akzeptierte_themen = [t for t in p.themen if p.pref[s,t] >= 0]
+			if len(akzeptierte_themen) < 25: #FIXME
+				print("Wählerisch: {}".format(s.name))
+			else:
+				for z in p.zeiteinheiten:#FIXME
+					prob += pulp.lpSum([thema_findet_dann_statt[t,z] for t in akzeptierte_themen]) >= 1
+
+
 		tatsaechlicher_platz = PulpMatrix("tatsaechlicher_platz", (p.themen, p.zeiteinheiten), 0, None, pulp.LpContinuous)
 		platz = PulpMatrix("platz", (p.themen, p.zeiteinheiten), 0, None, pulp.LpContinuous)
-		#FIXME
+		geschaetzte_kompetenzen = PulpMatrix("geschaetzte_kompetenzen", (p.themen,), 0, None, pulp.LpContinuous)
+		for t in p.themen:
+			prob += geschaetzte_kompetenzen == len([schuel for schuel in p.schueler if p.pref[schuel,t] == -1])*0.3 # Präferenz -1 bedeutet "interessiert mich nicht oder kenne ich schon"
+
+		#TODO Hier werden mehrstündige Themen noch nicht richtig betrachtet
 		for t in p.themen:
 			for z in p.zeiteinheiten:
 				#prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse() # Fabians
 				prob += tatsaechlicher_platz[t,z] == pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume])
-				prob += platz[t,z] <= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume])
+				prob += platz[t,z] <= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *1.1 + 3
+				prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *0.9 - 3
 				#prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) * 0.5
 				for v in p.thema_voraussetzungen[t]:
-					prob += platz[t,z] <= pulp.lpSum([platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle])
+					prob += platz[t,z] <= pulp.lpSum([platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle]) * 3 #FIXME test geschaetzte_kompetenzen
+		#Fabian Gundlach: platz[t,z] sollte eigentlich eine Approximation an die Anzahl Leute sein, die Thema t zum Zeitpunkt z sinnvoll anhцren kцnnen. Da muss genug Platz im Kurs sein (Zeile 187) und genug Leute mьssen die Voraussetzungen kennen (Zeile 190).
+		#Fabian Gundlach: Haben die Themen mit platz=0 alle viele Voraussetzungen (inkl. den indirekten)?
+		#Manuel: ach so, man müsste ja eigentlich so machen, dass man vom angeforderten Platz die Anzahl der schon kompetenten Schüler abzieht, denn die brauchen ja nicht die Voraussetzung		
+		#Bzw zu platz die Anzahl der kompetenten dazuzählt
+		
+		# Voraussetzung muss mindestens einmal vor dem voraussetzenden Thema kommen #TODO Das ist zu stark
+		#for t in p.themen:
+			#for v in p.thema_voraussetzungen[t]:
+				#for i, z in enumerate(p.zeiteinheiten):
+					#prob += pulp.lpSum(thema_findet_dann_statt[v,davor] for davor in p.zeiteinheiten[:i]) >= thema_findet_dann_statt[t,z]
 		
 		ueberfuellung = PulpMatrix("ueberfuellung", (p.themen,), 0, None, pulp.LpContinuous)
 		for t in p.themen:
 			prob += ueberfuellung[t] >= p.thema_beliebtheit[t] - pulp.lpSum([platz[t,z] for z in p.zeiteinheiten])
+		tatsaechliche_ueberfuellung = PulpMatrix("tatsaechliche_ueberfuellung", (p.themen,), 0, None, pulp.LpContinuous)
+		for t in p.themen:
+			prob += tatsaechliche_ueberfuellung[t] >= p.thema_beliebtheit[t] - pulp.lpSum([tatsaechlicher_platz[t,z] for z in p.zeiteinheiten])
+			for z in p.zeiteinheiten:
+				for v in p.thema_voraussetzungen[t]:
+					prob += tatsaechlicher_platz[t,z] <= pulp.lpSum([tatsaechlicher_platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle]) + geschaetzte_kompetenzen[t]
 		
 		#unterfuellung = PulpMatrix("unterfuellung", (p.themen,), 0, None, pulp.LpContinuous)
 		#for t in p.themen:
@@ -199,6 +245,30 @@ class Global(object):
 		
 		#beliebtheit = pulp.lpSum([-ueberfuellung[t] - 0.1*unterfuellung[t] for t in p.themen])
 		beliebtheit = pulp.lpSum([-ueberfuellung[t] for t in p.themen])
+		tatsaechliche_beliebtheit = pulp.lpSum([-tatsaechliche_ueberfuellung[t] for t in p.themen])
+		angebot_an_beliebten_themen = pulp.lpSum([tatsaechlicher_platz[t,z] * p.thema_beliebtheit[t] for t in p.themen for z in p.zeiteinheiten])
+		
+		# vielleicht noch so, dass die erste Voraussetzung vor dem letzten voraussetzenden kommt
+		def mittelbare_voraussetzungen(thema, tiefe=3):
+			for voraussetzung in p.thema_voraussetzungen[thema]:
+				yield voraussetzung
+				#yield from unmittelbare_voraussetzungen(voraussetzung) #Mann, wann wird das endlich Py3.3?
+				if tiefe > 1:
+					for mittelbare_voraussetzung in mittelbare_voraussetzungen(voraussetzung, tiefe-1):
+						yield mittelbare_voraussetzung
+
+		so_oft_kommt_es_noch = PulpMatrix("thema_zum_ersten_mal", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
+		so_oft_war_es_schon = PulpMatrix("thema_zum_ersten_mal", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
+		for t in p.themen:
+			#print("Denke über {} nach".format(t.titel))
+			#for v in mittelbare_voraussetzungen(t):
+				#print("Setze Bed. für {} -> {}".format(t.titel, v.titel))
+			#input()
+			for i, z in enumerate(p.zeiteinheiten):
+				prob += so_oft_kommt_es_noch[t,z] == pulp.lpSum([thema_findet_dann_statt[t,spaeter] for spaeter in p.zeiteinheiten[i+1:]])
+				prob += so_oft_war_es_schon[t,z] == pulp.lpSum([thema_findet_dann_statt[t,frueher] for frueher in p.zeiteinheiten[:i]])
+				for v in mittelbare_voraussetzungen(t):
+					prob += so_oft_kommt_es_noch[t,z] + so_oft_war_es_schon[v,z] >= 1
 		
 		#korrelationsmalus = 0
 		#if korrelationen_einbeziehen:
@@ -211,7 +281,7 @@ class Global(object):
 					#p.themenindex2 = p.themen.index(thema2)
 					#korrelationsmalus += pulp.lpSum([p.themen_korrelation2[thema1,thema2,zeiteinheit] for zeiteinheit in p.zeiteinheiten]) * p.themen_wunschkorrelation2[p.themenindex1][p.themenindex2]
 		
-		gesamtangebot = pulp.lpSum([thema_findet_dann_statt[t,z] for t in p.themen for z in p.zeiteinheiten])
+		gesamtangebot = pulp.lpSum([thema_findet_dann_statt[t,z] for t in p.themen for z in p.zeiteinheiten]) - pulp.lpSum([fortsetzung_findet_dann_statt[t,z] for t in p.themen for z in p.zeiteinheiten])
 		
 		#reihenfolge = []
 		#for zuerst, danach in p.voraussetzungen:
@@ -225,7 +295,7 @@ class Global(object):
 		
 		
 		# Die gewichtete Optimierungsfunktion:
-		prob += beliebtheit + gesamtangebot #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
+		prob += 2*angebot_an_beliebten_themen + beliebtheit + tatsaechliche_beliebtheit + gesamtangebot #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
 		
 		# Gerechtigkeitsdummys
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
@@ -247,18 +317,27 @@ class Global(object):
 		self.betreuer_themen = betreuer_themen.werte()
 		self.betreuer_belegungen = betreuer_belegungen.werte()
 		self.fortsetzungen = fortsetzung_findet_dann_statt.werte()
-
-		#for thema in p.themen:
+		self.so_oft_noch = so_oft_kommt_es_noch.werte()
+		self.so_oft_schon = so_oft_war_es_schon.werte()
+		self.thema_findet_dann_statt = thema_findet_dann_statt.werte()
+		self.thema_findet_so_oft_statt = thema_findet_so_oft_statt.werte()
+		for thema in p.themen:
+			print("{} = {} - {} | {}".format(self.thema_findet_so_oft_statt[thema], sum([self.thema_findet_dann_statt[thema,z] for z in p.zeiteinheiten]), sum([self.fortsetzungen[thema,z] for z in p.zeiteinheiten]), thema.titel))
+			#if thema.id in (304,305,306): #Mikhail
+				#print(thema.titel)
+				#print("so oft noch: ", [int(self.so_oft_noch[thema,zeiteinheit]) for zeiteinheit in p.zeiteinheiten])
+				#print("so oft schon:", [int(self.so_oft_schon[thema,zeiteinheit]) for zeiteinheit in p.zeiteinheiten])
+				#print("findet statt:", [int(self.thema_findet_dann_statt[thema,zeiteinheit]) for zeiteinheit in p.zeiteinheiten])
 			#if thema.laenge == 2:
 				#print(thema.titel)
 				#print([self.fortsetzungen[thema, zeiteinheit] for zeiteinheit in p.zeiteinheiten])
-		for zeiteinheit in p.zeiteinheiten:
-			for thema in p.themen:
-				if thema_findet_dann_statt[thema, zeiteinheit] == 1:
-					if platz.werte()[thema, zeiteinheit] == 0:
-						print("Kein Platz![?}", thema.titel, zeiteinheit.name)
-					else:
-						print("Platz", thema.titel, zeiteinheit.name)
+		#for zeiteinheit in p.zeiteinheiten:
+			#for thema in p.themen:
+				#if thema_findet_dann_statt[thema, zeiteinheit] == 1:
+					#if platz.werte()[thema, zeiteinheit] == 0:
+						#print("Kein Platz![?}", thema.titel, zeiteinheit.name)
+					#else:
+						#print("Platz", thema.titel, zeiteinheit.name)
 		self.calcrest()
 	
 	def calcrest(self):

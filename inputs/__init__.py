@@ -67,7 +67,7 @@ class PulpMatrix(Bessere):
 
 class AbstractProblem(object):
 	"""Speichert eine Instanz des Stundenplanproblems (Schüler, Themen, etc.)"""
-	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren):
+	def __init__(self, themen, exkursionen, betreuer, schueler, zeiteinheiten, nichtphysikzeiteinheiten, raeume, kompetenzen, voraussetzungen, ausnahmen, wunschthemen, raeume_ausnahmen, problem_id, organisatoren, muss_stattfinden_an):
 		self.themen = themen
 		self.exkursionen = exkursionen
 		allethemen = themen + exkursionen
@@ -84,6 +84,7 @@ class AbstractProblem(object):
 		self.raeume_ausnahmen = raeume_ausnahmen
 		self.problem_id = problem_id
 		self.organisatoren = organisatoren
+		self.muss_stattfinden_an = muss_stattfinden_an
 		# Ob a zur Zeit z anwesend ist
 		self.istda = Bessere((self.schueler+self.betreuer,allezeiteinheiten), 1)
 		for ausnahme in ausnahmen: # TODO: Dieses Jahr hatte ich noch manuell gecheckt, dass das funktioniert, aber allgemein muss da was schlaueres hin, was die aktuellen Anmeldungen joint
@@ -110,7 +111,7 @@ class AbstractProblem(object):
 		self.pref_zeit = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
 			for t in self.themen:
-				self.pref_zeit[a,t] = {-1 : 0.0001, 0 : 1., 1 : 3., 2 : 5., 3 : 8.}[self.pref[a,t]]
+				self.pref_zeit[a,t] = {-1 : 0.0001, 0 : 0.3, 1 : 3., 2 : 9., 3 : 12.}[self.pref[a,t]]
 		# Wie gerne a Thema t mag (normiert)
 		self.pref_norm = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
@@ -121,7 +122,8 @@ class AbstractProblem(object):
 		self.prefbetter = Bessere((self.schueler,self.themen), 0)
 		for a in self.schueler:
 			gesistda = sum([self.istda[a,z] for z in self.zeiteinheiten])
-			gespref = sum([self.pref_norm[a,t] for t in sorted(self.themen, key = (lambda t: -self.pref_norm[a,t]))[0:gesistda]])
+			#gespref = sum([self.pref_norm[a,t] for t in sorted(self.themen, key = (lambda t: -self.pref_norm[a,t]))[0:gesistda]]) #Das ist ungerecht bei Leuten, die nur 1 oder 5 Sterne vergeben (was bestraft werden sollte)
+			gespref = sum([self.pref_norm[a,t] for t in sorted(self.themen, key = (lambda t: -self.pref_norm[a,t]))[0:gesistda-2]])*gesistda/(gesistda-2)
 			for t in self.themen:
 				self.prefbetter[a,t] = self.pref_norm[a,t]/gespref
 		# Wie viel Zeit etwa insgesamt in Thema t verbracht wird
