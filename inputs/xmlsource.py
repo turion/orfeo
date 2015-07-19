@@ -233,7 +233,7 @@ class Problem(AbstractProblem):
 		
 	def macheexkursionen_alt(self):
 		import random
-		random.seed()
+		random.seed(43)
 		# Exkursionen zuordnen
 		self.exkursionenfuelle = Bessere((self.exkursionen,), 0)
 		self.exkursionenzuordnung = Bessere((self.schueler,), None)
@@ -265,7 +265,7 @@ class Problem(AbstractProblem):
 		self.zeigeexkursionen()
 	def macheexkursionen(self):
 		import random
-		random.seed()
+		random.seed(43)
 		exkursion_max = {
 			468: 100, #Laboe
 			467: 20, #Botanischer Garten
