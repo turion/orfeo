@@ -1,5 +1,5 @@
 \documentclass[a4paper,10pt,twoside]{scrartcl}
-\usepackage[left=2cm,right=2cm,top=1.5cm,bottom=1.5cm]{geometry}
+\usepackage[left=1.5cm,right=1.5cm,top=1cm,bottom=1cm]{geometry}
 \usepackage[ngerman]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{fancyhdr}
@@ -17,9 +17,15 @@
 
 \newcommand{\tagg}[1]{\textbf{\Large{#1:}}\vspace{2mm}}
 
-\newcommand{\bla}[3]{\makebox[3cm][l]{\textbf{#1}}\makebox[11cm]{{\small{#2}}}\makebox[3cm][r]{\textbf{#3}}}
+\newcommand{\blaold}[3]{\makebox[3cm][l]{\textbf{#1}}\makebox[11cm]{{\small{#2}}}\makebox[3cm][r]{\textbf{#3}}}
+\newcommand{\bla}[3]{
+	\begin{minipage}[t]{2.7cm}\textbf{#1}\end{minipage}
+	\begin{minipage}[t]{8.9cm}{\textbf{#2}}\end{minipage}
+	\hspace{0.1cm}
+	\begin{minipage}[t]{5.3cm}\textbf{#3}\end{minipage}
+}
 
-\newcommand{\beschreibung}[1]{\hspace*{8mm}\parbox{15.4cm}{#1}}
+\newcommand{\beschreibung}[1]{\hspace*{8mm}\parbox{16cm}{#1}}
 
 \newcommand{\kasten}[1]{\fbox{\parbox{\textwidth}{#1}}}
 

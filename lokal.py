@@ -79,16 +79,21 @@ class Lokal(object):
 		#maxauslastung = pulp.LpVariable("maxauslastung", 0, None, pulp.LpContinuous)
 		for z in p.zeiteinheiten:
 			for t in p.themen:
-				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume]) #TODO wieso hier minimum 15? #FIXME
-				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([r.max_personen * gl.raum_belegungen[r,t,z] for r in p.raeume]) #TODO wieso hier minimum 15? #FIXME
+				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,15) * gl.raum_belegungen[r,t,z] for r in p.raeume]) #TODO wieso hier minimum 15?
+				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([min(r.max_personen,30) * gl.raum_belegungen[r,t,z] for r in p.raeume]) #TODO Simeon empfiehlt max 30 Personen
+				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= sum([r.max_personen * gl.raum_belegungen[r,t,z] for r in p.raeume])
 				#prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) <= maxauslastung * sum([gl.raum_belegungen[r,t,z] for r in p.raeume])
 				# Jede Veranstaltung soll von >= 2 Leuten besucht werden (POTENTIELL GEFÄHRLICH!!!)
 				mingroesse = 3
 				for r in p.raeume:
 					if r.themen_id == t.id:
 						mingroesse = 4
+		# FIXME Große Räume sollten ein bisschen mehr ausgelastet werden (Simeon)
+					if r.max_personen > 40:
+						mingroesse = 6
 				prob += pulp.lpSum([belegungen[a,t,z] for a in p.schueler]) >= sum([mingroesse * gl.raum_belegungen[r,t,z] for r in p.raeume])
 		print(3)
+		
 		#prob += maxauslastung <= 15 # SEHR SELTSAM, dass das die Sache verbessert!!!
 		
 		# Was für Themen der Schüler zu welchen Zeitpunkten hatte
@@ -267,10 +272,14 @@ class Lokal(object):
 		for t in p.themen:
 			for v in p.thema_voraussetzungen[t]:
 				for s in p.schueler:
+					if s.id == 960 and t.id==306: #Daniel Petersen
+						print(t.titel, v.titel)
+						for z in p.zeiteinheiten:
+							print(self.belegungen[s,t,z], kennt_thema[s,v,z], p.pref[s,t], p.pref[s,v], z.name)
 					for z in p.zeiteinheiten:
 						if p.pref[s,t] >= 1 and p.pref[s,v] != -1:
 							if self.belegungen[s,t,z] > kennt_thema[s,v,z]:
-								raise ValueError("Schüler {} muss zuert Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel))
+								raise ValueError("Schüler {} muss zuerst Voraussetzung {} für {} lernen".format(s.cname(),v.titel,t.titel))
 		self.calcrest()
 	
 	@classmethod
@@ -386,7 +395,8 @@ class Lokal(object):
 		with open("stundenplan-einzeln.tex", encoding="utf8") as stundenplan_einzeln_datei:
 			stemplate = stundenplan_einzeln_datei.read()
 		for a in sorted(p.schueler, key=lambda b: b.name)+sorted(p.betreuer, key=lambda b: b.name):
-			ersetzen = {"name": a.cname(), "betreuerpagebreak": r"\newpage" if a in p.betreuer else ""}
+			ersetzen = {"name": a.cname(), "betreuerpagebreak": "", "betreuerkeinpagebreak": r"\newpage" if a not in p.betreuer else ""}
+			#ersetzen = {"name": a.cname(), "betreuerpagebreak": r"\newpage" if a in p.betreuer else "", "betreuerkeinpagebreak": r"\newpage" if a not in p.betreuer else ""}
 			def convert(n):
 				n = n.replace("Do ", "")
 				n = n.replace("Fr ", "")
@@ -395,10 +405,13 @@ class Lokal(object):
 				if n[1] == ':':
 					n = "\\phantom{1}"+tex(n)
 				return n
-			for z in p.zeiteinheiten:
+			for i, z in enumerate(p.zeiteinheiten):
 				if self.stundenplan[a,z]:
 					t = self.stundenplan[a,z]
 					tn = t.titel
+					if t.laenge == 2 and i > 0:
+						if self.stundenplan[a,p.zeiteinheiten[i-1]] == t:
+							tn += " (Fortsetzung)"
 					rn = gl.raum_von[t,z].name
 					beschr = "ca. %d Teilnehmer" % len(self.teilnehmer_von[t,z])
 					if a in p.betreuer:
@@ -417,7 +430,7 @@ class Lokal(object):
 					beschr = "\n\n\\beschreibung{%s}" % beschr
 				ersetzen["kurs%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}%s}" % (convert(z.name), tex(tn), tex(rn), beschr)
 			for z in p.nichtphysikzeiteinheiten:
-				if z == p.exkursionenzeit and a in p.schueler:
+				if z == p.exkursionenzeit:
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex("Exkursion: "+p.exkursionenzuordnung[a].titel if p.exkursionenzuordnung[a] else "frei"), "", "ca. %d Teilnehmer" % p.exkursionenfuelle[p.exkursionenzuordnung[a]])
 				elif z.beschreibung != "":
 					ersetzen["nichtphysik%d" % z.stelle] = "\\kasten{\\bla{%s}{%s}{%s}\n\n\\beschreibung{%s}}" % (convert(z.name), tex(z.titel), tex(z.ort), tex(z.beschreibung))
