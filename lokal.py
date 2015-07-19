@@ -116,12 +116,11 @@ class Lokal(object):
 		print(5)
 		
 
-		# Gerne = -1 => Der Schüler will das Thema auf keinen Fall
+		# Gerne = -1 oder 0 => Der Schüler will das Thema auf keinen Fall
 		# TODO Sollte das wirklich rein?
 		for a in p.schueler:
 			for t in p.themen:
-				if p.pref[a,t] == -1:
-					prob += schuelerthemen[a,t] <= 1
+				if p.pref[a,t] in (0,-1):
 					#prob += schuelerthemen[a,t] == 0 # == 0 klappt leider nicht immer FIXME
 		falsche_themen = pulp.lpSum([-schuelerthemen[a,t] for a in p.schueler for t in p.themen if p.pref[a,t] == -1])
 		

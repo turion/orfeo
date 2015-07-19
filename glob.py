@@ -299,11 +299,33 @@ class Global(object):
 		
 		#Mit dieser Wahrscheinlichkeit wird ein Schüler diesen Kurs belegen
 		statistische_belegungen = PulpMatrix("statistische_belegungen", (p.schueler, p.themen, p.zeiteinheiten), 0, 1, pulp.LpContinuous)
+		for s in p.schueler:
+			for zeit in p.zeiteinheiten:
+				for thema in p.themen:
+					prob += statistische_belegungen[s,thema,zeit] - p.istda[s,zeit] <= thema_findet_dann_statt[thema,zeit]
+				prob += pulp.lpSum([statistische_belegungen[s,thema,zeit] for thema in p.themen]) <= 1
+		
 		statistischer_physikspass = pulp.lpSum([statistische_belegungen[s,thema,zeit] * p.prefbetter[s,thema] for s in p.schueler for t in p.themen for zeit in p.zeiteinheiten])
 		
 		
+		
+		print("Dummybelegung")
+		
+		#Soll sicherstellen, dass es immer eine Belegung gibt, in der kein Schüler etwas machen muss, was er nicht will
+		dummy_belegungen = PulpMatrix("dummy_belegungen", (p.schueler, p.themen, p.zeiteinheiten), 0, 1, pulp.LpInteger)
+		for s in p.schueler:
+			for zeit in p.zeiteinheiten:
+				for thema in p.themen:
+					prob += dummy_belegungen[s,thema,zeit] - p.istda[s,zeit] <= thema_findet_dann_statt[thema,zeit]
+					if p.pref[s,thema] in (-1,0):
+						prob += dummy_belegungen[s,thema,zeit] == 0
+				prob += pulp.lpSum([dummy_belegungen[s,thema,zeit] for thema in p.themen]) <= 1
+		dummyspass = pulp.lpSum([dummy_belegungen[s,thema,zeit] * p.prefbetter[s,thema] for s in p.schueler for t in p.themen for zeit in p.zeiteinheiten])
+		#TODO Füge noch weitere Zwangsbedingungen von wegen Raumgrößen etc. hinzu
+		
+		
 		# Die gewichtete Optimierungsfunktion:
-		prob += 2*angebot_an_beliebten_themen + beliebtheit + tatsaechliche_beliebtheit + gesamtangebot + 100000*statistischer_physikspass #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
+		prob += 2*angebot_an_beliebten_themen + beliebtheit + tatsaechliche_beliebtheit + gesamtangebot + dummyspass #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
 		#prob += statistischer_physikspass
 		# Gerechtigkeitsdummys
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
