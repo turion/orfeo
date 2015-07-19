@@ -61,6 +61,7 @@ class Global(object):
 		# Dafür sorgen, dass es genug Kurse für alle gibt
 		for z in p.zeiteinheiten:
 			prob += pulp.lpSum([raum_belegungen[r,t,z]*r.max_personen for t in p.themen for r in p.raeume]) >= sum([p.istda[s,z] for s in p.schueler])
+			prob += pulp.lpSum([thema_findet_dann_statt[t,z] for t in p.themen]) >= 4
 		
 		# Spezialräume
 		nurinraeumen = Bessere((p.themen,), [])
@@ -196,7 +197,8 @@ class Global(object):
 		for s in p.schueler:
 			akzeptierte_themen = [t for t in p.themen if p.pref[s,t] >= 0]
 			if len(akzeptierte_themen) < 25: #FIXME
-				print("Wählerisch: {}".format(s.name))
+				#print("Wählerisch: {}".format(s.name))
+				pass
 			else:
 				for z in p.zeiteinheiten:#FIXME
 					prob += pulp.lpSum([thema_findet_dann_statt[t,z] for t in akzeptierte_themen]) >= 1
@@ -211,10 +213,10 @@ class Global(object):
 		#TODO Hier werden mehrstündige Themen noch nicht richtig betrachtet
 		for t in p.themen:
 			for z in p.zeiteinheiten:
-				#prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse() # Fabians
+				prob += platz[t,z] <= thema_findet_dann_statt[t,z]*t.gutegroesse() # Fabians FIXME
 				prob += tatsaechlicher_platz[t,z] == pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume])
-				prob += platz[t,z] <= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *1.1 + 3
-				prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *0.9 - 3
+				#prob += platz[t,z] <= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *1.1 + 3
+				#prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) *0.9 - 3
 				#prob += platz[t,z] >= pulp.lpSum([raum_belegungen[r,t,z] * r.max_personen for r in p.raeume]) * 0.5
 				for v in p.thema_voraussetzungen[t]:
 					prob += platz[t,z] <= pulp.lpSum([platz[v,z1] for z1 in p.zeiteinheiten if z1.stelle < z.stelle]) * 3 #FIXME test geschaetzte_kompetenzen
@@ -257,8 +259,8 @@ class Global(object):
 					for mittelbare_voraussetzung in mittelbare_voraussetzungen(voraussetzung, tiefe-1):
 						yield mittelbare_voraussetzung
 
-		so_oft_kommt_es_noch = PulpMatrix("thema_zum_ersten_mal", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
-		so_oft_war_es_schon = PulpMatrix("thema_zum_ersten_mal", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
+		so_oft_kommt_es_noch = PulpMatrix("so_oft_kommt_es_noch", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
+		so_oft_war_es_schon = PulpMatrix("so_oft_war_es_schon", (p.themen,p.zeiteinheiten), 0, None, pulp.LpInteger)
 		for t in p.themen:
 			#print("Denke über {} nach".format(t.titel))
 			#for v in mittelbare_voraussetzungen(t):
@@ -321,8 +323,8 @@ class Global(object):
 		self.so_oft_schon = so_oft_war_es_schon.werte()
 		self.thema_findet_dann_statt = thema_findet_dann_statt.werte()
 		self.thema_findet_so_oft_statt = thema_findet_so_oft_statt.werte()
-		for thema in p.themen:
-			print("{} = {} - {} | {}".format(self.thema_findet_so_oft_statt[thema], sum([self.thema_findet_dann_statt[thema,z] for z in p.zeiteinheiten]), sum([self.fortsetzungen[thema,z] for z in p.zeiteinheiten]), thema.titel))
+		#for thema in p.themen:
+			#print("{} = {} - {} | {}".format(self.thema_findet_so_oft_statt[thema], sum([self.thema_findet_dann_statt[thema,z] for z in p.zeiteinheiten]), sum([self.fortsetzungen[thema,z] for z in p.zeiteinheiten]), thema.titel))
 			#if thema.id in (304,305,306): #Mikhail
 				#print(thema.titel)
 				#print("so oft noch: ", [int(self.so_oft_noch[thema,zeiteinheit]) for zeiteinheit in p.zeiteinheiten])
