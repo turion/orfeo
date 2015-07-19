@@ -295,10 +295,16 @@ class Global(object):
 					#reihenfolge.append(var)
 		#reihenfolge = pulp.lpSum(reihenfolge) #TODO Was sollte das jetzt nochmal?
 		
+		print("Statistische Optimierung")
+		
+		#Mit dieser Wahrscheinlichkeit wird ein Schüler diesen Kurs belegen
+		statistische_belegungen = PulpMatrix("statistische_belegungen", (p.schueler, p.themen, p.zeiteinheiten), 0, 1, pulp.LpContinuous)
+		statistischer_physikspass = pulp.lpSum([statistische_belegungen[s,thema,zeit] * p.prefbetter[s,thema] for s in p.schueler for t in p.themen for zeit in p.zeiteinheiten])
+		
 		
 		# Die gewichtete Optimierungsfunktion:
-		prob += 2*angebot_an_beliebten_themen + beliebtheit + tatsaechliche_beliebtheit + gesamtangebot #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
-		
+		prob += 2*angebot_an_beliebten_themen + beliebtheit + tatsaechliche_beliebtheit + gesamtangebot + 100000*statistischer_physikspass #+ 0.01*reihenfolge #+ (-0.5)*korrelationsmalus
+		#prob += statistischer_physikspass
 		# Gerechtigkeitsdummys
 		# Dummybedingungen um Fehler zu finden. Außerdem ist das eigentlich relativ gerecht.
 		# Jeder Betreuer, sofern er kein Organisator ist, sollte mindestens 7 Mal etwas tun
